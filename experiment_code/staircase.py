@@ -31,10 +31,7 @@ if not dlg.OK:
 ###################################
 # variables in gv are just used to structure the task
 gv = dict(
-    max_n_trials=5,
-    initial_k=0.5,
-    initial_reward=18,
-    initial_effort=6
+    max_n_trials=5
 )
 
 ###################################
@@ -55,10 +52,10 @@ info = dict(
     handedness=expInfo['handedness (l/r/b)'],
 
     trial_count=0,
-    reward=None,
-    effort=None,
-    estimated_k=None,
-    estimated_net_value=None,
+    reward=18,  # initial reward
+    effort=6,  # initial effort
+    estimated_k=0.5,  # initial estimate
+    estimated_net_value=18 - 0.5 * 6 ** 2,  # initial estimate
     participant_response=None
 )
 
@@ -76,9 +73,11 @@ datafile.flush()
 ###################################
 win = visual.Window(
     gammaErrorPolicy='ignore',
-    fullscr=True, screen=0,
+    size=[1000, 800],
+    fullscr=False,
+    screen=1,
     allowGUI=True, allowStencil=False,
-    monitor='testMonitor', color='black',
+    monitor='testMonitor', color='white',
     blendMode='avg', useFBO=True, units='pix')
 
 ###################################
@@ -90,15 +89,15 @@ button = visual.Rect(
     units="pix",
     width=160,
     height=60,
-    pos=(0, -400),
+    pos=(0, -200),
     fillColor=[-1, 1, -1],
     lineColor=[-1, .8, -1]
 )
 button_txt = visual.TextStim(win=win, text='NEXT', height=th, pos=button.pos, color=[-1, -1, -1], bold=True)
-welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='white')
+welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='black')
 welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be playing a game with dots!', height=50,
-                               pos=[0, 0], color='white')
-thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 0], color='white')
+                               pos=[0, 0], color='black')
+thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 0], color='black')
 
 
 ###################################
@@ -123,33 +122,48 @@ def calculate_net_value(reward, effort, k):
     return reward - k * effort ** 2
 
 
-# trial function
-def do_trial(win, mouse, gv, info):
-    # clock
-    trial_clock = core.Clock()
+# show reward-effort offer
+def do_trial(win, mouse, info):
+    # draw reward effort offer
+    effort_outline = visual.Rect(win, width=100, height=300, pos=(200, 0), lineColor='blue', fillColor=None)
+    effort_fill = visual.Rect(win, width=100, height=info['effort'] / 10.0 * 300,
+                              pos=(200, -150 + (info['effort'] / 10.0 * 300) / 2),
+                              lineColor=None, fillColor='blue')
+    effort_text = visual.TextStim(win, text=f"effort level: {info['effort']}", pos=(200, -200), color='black',
+                                  height=20)
+    reward_text = visual.TextStim(win, text=f"{info['reward']} points", pos=(-200, 200), color='black', height=20)
+    accept_button = visual.ButtonStim(win, text='Accept', pos=(0, -100), size=(100, 50), color='green')
+    reject_button = visual.ButtonStim(win, text='Reject', pos=(0, -200), size=(100, 50), color='red')
+    effort_outline.draw(), effort_fill.draw(), effort_text.draw(), reward_text.draw(), accept_button.draw(), reject_button.draw()
+    win.flip()
 
-    # initial values
-    estimated_k = gv['initial_k'], reward = gv['initial_reward'], effort = gv['initial_effort']
+    # get participant response
+    response = None
+    while response is None:
+        if accept_button.contains(mouse) and mouse.getPressed()[0]:
+            response = 'accepted'
+        elif reject_button.contains(mouse) and mouse.getPressed()[0]:
+            response = 'rejected'
+        core.wait(0.01)
 
-    for trial in range(gv['max_n_trials']):
-        # stimulus
-        effort_outline = visual.Rect(win, width=100, height=300, pos=(200, 0), lineColor='blue', fillColor=None)
-        effort_fill = visual.Rect(win, width=100, height=effort / 10.0 * 300, pos=(200, -150 + (effort / 10.0 * 300) / 2), lineColor=None, fillColor='blue')
-        effort_text = visual.TextStim(win, text=f"effort level: {effort}", pos=(200, -200), color='black', height=20)
-        reward_text = visual.TextStim(win, text=f"{reward} points", pos=(-200, 200), color='black', height=20)
+    # update k based on response
+    # adaptive step size using logarithmic decay
+    step_size = 0.15 / np.log(info['trial_count'] + 4)
+    info['estimated_net_value'] = calculate_net_value(info['reward'], info['effort'], info['estimated_k'])
+    if info['estimated_net_value'] < 0 and response == 'accepted':
+        info['estimated_k'] = info['estimated_k'] - step_size
+    elif info['estimated_net_value'] > 0 and response == 'rejected':
+        info['estimated_k'] = info['estimated_k'] + step_size
 
-        effort_outline.draw()
-        effort_fill.draw()
-        effort_text.draw()
-        reward_text.draw()
+    # adjust reward and effort for next trial to aim for a net value close to zero
+    # reward between 10 and 30, effort between 1 and 10
+    target_net_value = np.random.uniform(-1, 1)
+    next_effort = int(np.random.uniform(1, 10))
+    next_reward = int(info['estimated_k'] * next_effort ** 2 + target_net_value)
+    info['reward'], info['effort'] = max(min(next_reward, 28), 8), next_effort
 
-        win.flip(), exit_q()
-
-        # Keep the window open until a key is pressed
-        event.waitKeys()
-
-        return info
-
+    # get updated info dict back out
+    return info
 
 
 ###################################
@@ -174,14 +188,13 @@ while not mouse.isPressedIn(button):
 
 # actual trials
 for trial in range(gv['max_n_trials']):
-
-    info = do_trial(win, mouse, gv, info)
-
-    info['trial_count'] = int(info['trial_count']) + 1
-    info = do_trial(win, mouse, gv, info)
+    info = do_trial(win, mouse, info)
+    info['trial_count'] += 1
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')
     datafile.flush()
+
+print(info)
 
 # thank you
 thanks_txt.draw()

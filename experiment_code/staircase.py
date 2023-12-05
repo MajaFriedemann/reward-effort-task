@@ -82,13 +82,13 @@ win = visual.Window(
 ###################################
 # INSTRUCTIONS
 ###################################
-next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='green', opacity=0.85)
+next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='mediumspringgreen')
 next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
-next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='green')
-welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='white')
+next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
+welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=50, pos=[0, 0], color='white')
 welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be playing a game with dots!', height=50,
                                pos=[0, 0], color='white')
-thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 0], color='white')
+thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=50, pos=[0, 0], color='white')
 
 
 ###################################
@@ -124,15 +124,15 @@ def do_trial(win, mouse, info):
     reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-120, 100), color='white', height=42,
                                   bold=True)
 
-    accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='green', opacity=0.85)
+    accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='springgreen')
     accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=16, pos=accept_button.pos, color='black',
                                         bold=True)
-    accept_glow = visual.Rect(win, width=160, height=70, pos=accept_button.pos, fillColor='green')
+    accept_glow = visual.Rect(win, width=160, height=70, pos=accept_button.pos, fillColor='springgreen', opacity=0.5)
 
-    reject_button = visual.Rect(win, width=accept_button.width, height=accept_button.height, pos=(0, -350), fillColor='red', opacity=0.85)
+    reject_button = visual.Rect(win, width=accept_button.width, height=accept_button.height, pos=(0, -350), fillColor='red')
     reject_button_txt = visual.TextStim(win=win, text='REJECT', height=accept_button_txt.height, pos=reject_button.pos, color='black',
                                         bold=True)
-    reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos, fillColor='red')
+    reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos, fillColor='red', opacity=0.5)
 
     stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
                reject_button_txt]

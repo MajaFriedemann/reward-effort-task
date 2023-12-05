@@ -1,0 +1,6 @@
+expName,curec_ID,session,session_nr,date,end_date,participant,age,gender,handedness,trial_count,reward,effort,estimated_k,estimated_net_value,participant_response
+pgACC-TUS-staircase,,,,2023-12-05_15h26.14.854,None,,,,,1,18,6,0.5,0.0,None
+pgACC-TUS-staircase,,,,2023-12-05_15h26.14.854,None,,,,,2,8,1,0.5932002401839418,7.5,None
+pgACC-TUS-staircase,,,,2023-12-05_15h26.14.854,None,,,,,3,8,2,0.5932002401839418,5.627199039264233,None
+pgACC-TUS-staircase,,,,2023-12-05_15h26.14.854,None,,,,,4,8,1,0.5932002401839418,7.406799759816058,None
+pgACC-TUS-staircase,,,,2023-12-05_15h26.14.854,None,,,,,5,8,2,0.66533499222839,5.627199039264233,None

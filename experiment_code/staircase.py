@@ -82,9 +82,9 @@ win = visual.Window(
 ###################################
 # INSTRUCTIONS
 ###################################
-next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='green',
-                          lineColor='darkgreen')
+next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='green', opacity=0.85)
 next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
+next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='green')
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='white')
 welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be playing a game with dots!', height=50,
                                pos=[0, 0], color='white')
@@ -109,28 +109,30 @@ def calculate_net_value(reward, effort, k):
 def do_trial(win, mouse, info):
     win.flip(), core.wait(0.5)  # blank screen in between trials
 
-    # Moving the effort bar towards the middle
+    # stimuli
     effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 100), lineColor='grey', fillColor=None)
-    effort_fill = visual.Rect(win, width=120, height=0, pos=(100, 100 - 160), lineColor=None, fillColor='lightblue')
-
-    # Gradually increase the height of effort_fill to create an animation
-    for h in range(int(info['effort'] / 10.0 * 320)):
-        effort_fill.height = h
-        effort_fill.pos = (100, 100 - 160 + h / 2)
-        stimuli = [effort_outline, effort_fill]
-        draw_all_stimuli(stimuli), win.flip(), core.wait(0.005)
-
-    # Positioning the effort text to the right of the effort bar
+    effort_fill = visual.Rect(win, width=120, height=int(info['effort'] / 10.0 * 320), pos=(100, 100 - 160 + int(info['effort'] / 10.0 * 320) / 2), lineColor=None, fillColor='lightblue')
+    # the below is for animating the effort bar, so it fills up over time
+    # effort_fill = visual.Rect(win, width=120, height=0, pos=(100, 100 - 160), lineColor=None, fillColor='lightblue')
+    # for h in range(int(info['effort'] / 10.0 * 320)):
+    #     effort_fill.height = h
+    #     effort_fill.pos = (100, 100 - 160 + h / 2)
+    #     stimuli = [effort_outline, effort_fill]
+    #     draw_all_stimuli(stimuli), win.flip(), core.wait(0.005)
     effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -80), color='white', height=22)
+
     reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-120, 100), color='white', height=42,
                                   bold=True)
 
-    accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='green', lineColor='darkgreen')
+    accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='green', opacity=0.85)
     accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=16, pos=accept_button.pos, color='black',
                                         bold=True)
-    reject_button = visual.Rect(win, width=150, height=60, pos=(0, -350), fillColor='red', lineColor='darkred')
-    reject_button_txt = visual.TextStim(win=win, text='REJECT', height=16, pos=reject_button.pos, color='black',
+    accept_glow = visual.Rect(win, width=160, height=70, pos=accept_button.pos, fillColor='green')
+
+    reject_button = visual.Rect(win, width=accept_button.width, height=accept_button.height, pos=(0, -350), fillColor='red', opacity=0.85)
+    reject_button_txt = visual.TextStim(win=win, text='REJECT', height=accept_button_txt.height, pos=reject_button.pos, color='black',
                                         bold=True)
+    reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos, fillColor='red')
 
     stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
                reject_button_txt]
@@ -139,27 +141,27 @@ def do_trial(win, mouse, info):
     # get participant response
     response = None
     while response is None:
-        # check for mouse hover and update button colors
+        # Check for mouse hover over either button
         accept_hover = accept_button.contains(mouse)
         reject_hover = reject_button.contains(mouse)
 
-        accept_button.lineColor = 'lightgreen' if accept_hover else 'darkgreen'
-        reject_button.lineColor = [1, -1, -1] if reject_hover else 'darkred'
+        # Draw glow effect if mouse is hovering over buttons
+        if accept_hover:
+            accept_glow.draw()
+        if reject_hover:
+            reject_glow.draw()
 
-        if accept_hover or reject_hover:
-            win.flip()
-
-        # check for button press
-        if mouse.getPressed()[0]:  # check if the mouse is clicked
+        # Check for mouse click
+        if mouse.getPressed()[0]:  # If the mouse is clicked
+            core.wait(0.5)
             if accept_hover:
                 response = 'accepted'
             elif reject_hover:
                 response = 'rejected'
 
-        # draw all stimuli and flip the window
+        # Draw all stimuli and flip the window
         draw_all_stimuli(stimuli)
-        win.flip()
-        core.wait(0.01)
+        core.wait(0.05), win.flip()
 
     # update k based on response
     # adaptive step size using logarithmic decay
@@ -196,9 +198,7 @@ draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
 while not mouse.isPressedIn(next_button):
     # check if the mouse is hovering over the button
     if next_button.contains(mouse):
-        next_button.lineColor = 'lightgreen'
-    else:
-        next_button.lineColor = 'darkgreen'
+        next_glow.draw()
     # draw all stimuli and flip the window
     draw_all_stimuli(stimuli)
     win.flip(), core.wait(0.05)
@@ -208,12 +208,11 @@ draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
 while not mouse.isPressedIn(next_button):
     # check if the mouse is hovering over the button
     if next_button.contains(mouse):
-        next_button.lineColor = 'lightgreen'
-    else:
-        next_button.lineColor = 'darkgreen'
+        next_glow.draw()
     # draw all stimuli and flip the window
     draw_all_stimuli(stimuli)
     win.flip(), core.wait(0.05)
+core.wait(0.5)
 
 # actual trials
 for trial in range(gv['max_n_trials']):
@@ -224,6 +223,7 @@ for trial in range(gv['max_n_trials']):
     datafile.flush()
     info['reward'] = info['next_reward']
     info['effort'] = info['next_effort']
+core.wait(0.5)
 
 # thank you
 thanks_txt.draw()

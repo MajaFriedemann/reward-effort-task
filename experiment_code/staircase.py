@@ -72,9 +72,9 @@ datafile.flush()
 ###################################
 win = visual.Window(
     gammaErrorPolicy='ignore',
-    size=[1000, 800],
-    fullscr=False,
-    screen=1,
+    size=[1920, 1080], # set correct monitor size
+    fullscr=True,
+    screen=0,
     allowGUI=True, allowStencil=False,
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
@@ -86,7 +86,7 @@ next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -2
 next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=50, pos=[0, 0], color='white')
-welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be playing a game with dots!', height=50,
+welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be offered points for effort!', height=50,
                                pos=[0, 0], color='white')
 thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=50, pos=[0, 0], color='white')
 

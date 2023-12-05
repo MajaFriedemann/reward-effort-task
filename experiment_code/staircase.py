@@ -11,7 +11,6 @@ from psychopy.hardware import keyboard
 ###################################
 # SESSION INFORMATION
 ###################################
-print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
 # Pop up asking for participant number, session, age, and gender
 expInfo = {'participant nr': '',
            'session (x/y/s)': '',
@@ -77,44 +76,28 @@ win = visual.Window(
     fullscr=False,
     screen=1,
     allowGUI=True, allowStencil=False,
-    monitor='testMonitor', color='white',
+    monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
 
 ###################################
 # INSTRUCTIONS
 ###################################
-th = 35
-button = visual.Rect(
-    win=win,
-    units="pix",
-    width=160,
-    height=60,
-    pos=(0, -200),
-    fillColor=[-1, 1, -1],
-    lineColor=[-1, .8, -1]
-)
-button_txt = visual.TextStim(win=win, text='NEXT', height=th, pos=button.pos, color=[-1, -1, -1], bold=True)
-welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='black')
+next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='green',
+                          lineColor='darkgreen')
+next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
+welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=70, pos=[0, 0], color='white')
 welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be playing a game with dots!', height=50,
-                               pos=[0, 0], color='black')
-thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 0], color='black')
+                               pos=[0, 0], color='white')
+thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 0], color='white')
 
 
 ###################################
 # FUNCTIONS
 ###################################
-# allow exiting the experiment when we are in full screen mode
-def exit_q(key_list=None):
-    # this just checks if anything has been pressed - it doesn't wait
-    if key_list is None:
-        key_list = ['q']
-    keys = event.getKeys(keyList=key_list)
-    res = len(keys) > 0
-    if res:
-        if 'q' in keys:
-            win.close()
-            core.quit()
-    return res
+# draw all stimuli on win flip
+def draw_all_stimuli(stimuli):
+    for stimulus in stimuli:
+        stimulus.draw()
 
 
 # calculate net value
@@ -122,28 +105,60 @@ def calculate_net_value(reward, effort, k):
     return reward - k * effort ** 2
 
 
-# show reward-effort offer
+# do trial and estimate k
 def do_trial(win, mouse, info):
-    # draw reward effort offer
-    effort_outline = visual.Rect(win, width=100, height=300, pos=(200, 0), lineColor='blue', fillColor=None)
-    effort_fill = visual.Rect(win, width=100, height=info['effort'] / 10.0 * 300,
-                              pos=(200, -150 + (info['effort'] / 10.0 * 300) / 2),
-                              lineColor=None, fillColor='blue')
-    effort_text = visual.TextStim(win, text=f"effort level: {info['effort']}", pos=(200, -200), color='black',
-                                  height=20)
-    reward_text = visual.TextStim(win, text=f"{info['reward']} points", pos=(-200, 200), color='black', height=20)
-    accept_button = visual.ButtonStim(win, text='Accept', pos=(0, -100), size=(100, 50), color='green')
-    reject_button = visual.ButtonStim(win, text='Reject', pos=(0, -200), size=(100, 50), color='red')
-    effort_outline.draw(), effort_fill.draw(), effort_text.draw(), reward_text.draw(), accept_button.draw(), reject_button.draw()
-    win.flip()
+    win.flip(), core.wait(0.5)  # blank screen in between trials
+
+    # Moving the effort bar towards the middle
+    effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 100), lineColor='grey', fillColor=None)
+    effort_fill = visual.Rect(win, width=120, height=0, pos=(100, 100 - 160), lineColor=None, fillColor='lightblue')
+
+    # Gradually increase the height of effort_fill to create an animation
+    for h in range(int(info['effort'] / 10.0 * 320)):
+        effort_fill.height = h
+        effort_fill.pos = (100, 100 - 160 + h / 2)
+        stimuli = [effort_outline, effort_fill]
+        draw_all_stimuli(stimuli), win.flip(), core.wait(0.005)
+
+    # Positioning the effort text to the right of the effort bar
+    effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -80), color='white', height=22)
+    reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-120, 100), color='white', height=42,
+                                  bold=True)
+
+    accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='green', lineColor='darkgreen')
+    accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=16, pos=accept_button.pos, color='black',
+                                        bold=True)
+    reject_button = visual.Rect(win, width=150, height=60, pos=(0, -350), fillColor='red', lineColor='darkred')
+    reject_button_txt = visual.TextStim(win=win, text='REJECT', height=16, pos=reject_button.pos, color='black',
+                                        bold=True)
+
+    stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
+               reject_button_txt]
+    draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
 
     # get participant response
     response = None
     while response is None:
-        if accept_button.contains(mouse) and mouse.getPressed()[0]:
-            response = 'accepted'
-        elif reject_button.contains(mouse) and mouse.getPressed()[0]:
-            response = 'rejected'
+        # check for mouse hover and update button colors
+        accept_hover = accept_button.contains(mouse)
+        reject_hover = reject_button.contains(mouse)
+
+        accept_button.lineColor = 'lightgreen' if accept_hover else 'darkgreen'
+        reject_button.lineColor = [1, -1, -1] if reject_hover else 'darkred'
+
+        if accept_hover or reject_hover:
+            win.flip()
+
+        # check for button press
+        if mouse.getPressed()[0]:  # check if the mouse is clicked
+            if accept_hover:
+                response = 'accepted'
+            elif reject_hover:
+                response = 'rejected'
+
+        # draw all stimuli and flip the window
+        draw_all_stimuli(stimuli)
+        win.flip()
         core.wait(0.01)
 
     # update k based on response
@@ -160,7 +175,7 @@ def do_trial(win, mouse, info):
     target_net_value = np.random.uniform(-1, 1)
     next_effort = int(np.random.uniform(1, 10))
     next_reward = int(info['estimated_k'] * next_effort ** 2 + target_net_value)
-    info['reward'], info['effort'] = max(min(next_reward, 28), 8), next_effort
+    info['next_reward'], info['next_effort'] = max(min(next_reward, 28), 8), next_effort
 
     # get updated info dict back out
     return info
@@ -176,15 +191,29 @@ mouse = event.Mouse()
 win.mouseVisible = True
 
 # welcome
-welcome_txt.draw(), button.draw(), button_txt.draw()
-win.flip(), exit_q(), core.wait(0.2)
-while not mouse.isPressedIn(button):
-    pass
+stimuli = [welcome_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_button.lineColor = 'lightgreen'
+    else:
+        next_button.lineColor = 'darkgreen'
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
 
-welcome2_txt.draw(), button.draw(), button_txt.draw()
-win.flip(), exit_q(), core.wait(0.2)
-while not mouse.isPressedIn(button):
-    pass
+stimuli = [welcome2_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_button.lineColor = 'lightgreen'
+    else:
+        next_button.lineColor = 'darkgreen'
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
 
 # actual trials
 for trial in range(gv['max_n_trials']):
@@ -193,8 +222,8 @@ for trial in range(gv['max_n_trials']):
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')
     datafile.flush()
-
-print(info)
+    info['reward'] = info['next_reward']
+    info['effort'] = info['next_effort']
 
 # thank you
 thanks_txt.draw()

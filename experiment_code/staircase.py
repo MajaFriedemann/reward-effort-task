@@ -1,9 +1,7 @@
 ###################################
 # IMPORT PACKAGES
 ###################################
-import random
 import os
-import math
 import numpy as np
 from psychopy import gui, visual, core, data, event, logging, misc, clock
 from psychopy.hardware import keyboard
@@ -67,6 +65,7 @@ datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
 
+
 ###################################
 # SET UP WINDOW
 ###################################
@@ -79,8 +78,9 @@ win = visual.Window(
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
 
+
 ###################################
-# STIMULI
+# CREATE STIMULI
 ###################################
 next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -200), fillColor='mediumspringgreen')
 next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
@@ -183,6 +183,8 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 
     # get updated info dict back out
     return info
+
+    # CONSIDER ADDING AN EARLY STOPPING RULE!!!!!!!!!!
 
 
 ###################################

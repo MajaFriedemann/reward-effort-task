@@ -65,19 +65,17 @@ datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
 
-
 ###################################
 # SET UP WINDOW
 ###################################
 win = visual.Window(
     gammaErrorPolicy='ignore',
-    size=[1920, 1080], # set correct monitor size
+    size=[1920, 1080],  # set correct monitor size
     fullscr=True,
     screen=0,
     allowGUI=True, allowStencil=False,
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
-
 
 ###################################
 # CREATE STIMULI
@@ -94,6 +92,7 @@ effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 100), lineCol
 effort_fill = visual.Rect(win, width=120, height=int(info['effort'] / 10.0 * 320),
                           pos=(100, 100 - 160 + int(info['effort'] / 10.0 * 320) / 2), lineColor=None,
                           fillColor='lightblue')
+effort_fill_dynamic = visual.Rect(win, width=120, fillColor='darkblue', lineColor=None)
 effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -80), color='white', height=22)
 
 reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-120, 100), color='white', height=42,
@@ -110,6 +109,8 @@ reject_button_txt = visual.TextStim(win=win, text='REJECT', height=accept_button
                                     bold=True)
 reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos,
                           fillColor='red', opacity=0.5)
+squeeze_txt = visual.TextStim(win=win, text='You have accepted the offer. Squeeze the grip device until the bar is '
+                                            'filled up to the threshold!', height=30, pos=[0, 300], color='white')
 
 
 ###################################
@@ -127,7 +128,8 @@ def calculate_net_value(reward, effort, k):
 
 
 # do trial and estimate k
-def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button, reject_button_txt):
+def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt,
+             reject_button, reject_button_txt):
     win.flip(), core.wait(0.5)  # blank screen in between trials
 
     # update stimuli
@@ -137,7 +139,8 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
     reward_text.text = f"{info['reward']} Points"
 
     # draw all stimuli
-    stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button, reject_button_txt]
+    stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
+               reject_button_txt]
     draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
 
     # get participant response
@@ -155,15 +158,16 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 
         # Check for mouse click
         if mouse.getPressed()[0]:  # If the mouse is clicked
+            info['participant_response'] = response
             core.wait(0.5)
             if accept_hover:
                 response = 'accepted'
+
             elif reject_hover:
                 response = 'rejected'
 
         # Draw all stimuli and flip the window
-        draw_all_stimuli(stimuli)
-        core.wait(0.05), win.flip()
+        draw_all_stimuli(stimuli), core.wait(0.05), win.flip()
 
     # update k based on response
     # adaptive step size using logarithmic decay
@@ -181,16 +185,30 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
     next_reward = int(info['estimated_k'] * next_effort ** 2 + target_net_value)
     info['next_reward'], info['next_effort'] = max(min(next_reward, 28), 8), next_effort
 
+    # if participant accepted, make them exert the effort (CONSIDER DOING THIS ONLY ON A SUBSET OF ACCEPT TRIALS!!!)
+    if response == 'accepted':
+        success = None
+        while success is None:
+            mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
+
+            # calculate the dynamic height of the dark blue bar based on mouse position
+            dynamic_height = max(min(mouse_y, 320), 0)
+            effort_fill_dynamic.height = dynamic_height
+            effort_fill_dynamic.pos = (100, 100 - 160 + dynamic_height / 2)
+
+            stimuli = [squeeze_txt, effort_outline, effort_fill, effort_fill_dynamic, effort_text]
+            draw_all_stimuli(stimuli)
+            win.flip()
+
     # get updated info dict back out
     return info
 
-    # CONSIDER ADDING AN EARLY STOPPING RULE!!!!!!!!!!
+    # CONSIDER ADDING AN EARLY STOPPING RULE!!!
 
 
 ###################################
 # EXPERIMENT
 ###################################
-
 # initialise clock and mouse
 globalClock = core.Clock()
 mouse = event.Mouse()
@@ -220,7 +238,8 @@ core.wait(0.5)
 
 # actual trials
 for trial in range(gv['max_n_trials']):
-    info = do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button, reject_button_txt)
+    info = do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button,
+                    accept_button_txt, reject_button, reject_button_txt)
     info['trial_count'] += 1
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')

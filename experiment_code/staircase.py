@@ -84,16 +84,40 @@ next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -2
 next_button_txt = visual.TextStim(win=win, text='NEXT', height=16, pos=next_button.pos, color='black', bold=True)
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=50, pos=[0, 0], color='white')
-welcome2_txt = visual.TextStim(win=win, text='In this experiment, you will be offered points for effort!', height=50,
-                               pos=[0, 0], color='white')
+instructions1_txt = visual.TextStim(win=win,
+                                     text="Welcome to the experiment. In this task, you will be offered points in "
+                                          "exchange for exerting effort. Your goal is to decide whether the points "
+                                          "offered are worth the effort required.",
+                                     height=30, pos=[0, 0], wrapWidth=1000, color='white')
+instructions2_txt = visual.TextStim(win=win,
+                                     text="On each trial, you will be presented with an offer of points. Consider "
+                                          "carefully if the points are worth the effort required. \n\n- If you think "
+                                          "it's worth it, click 'Accept'. \n- If you think it's not, click 'Reject'.",
+                                     height=30, pos=[0, 0], wrapWidth=1000, color='white')
+instructions3_txt = visual.TextStim(win=win,
+                                     text="When you click 'Accept', you will use a hand gripper (Biopac Hand Clench "
+                                          "Dynamometer) to exert effort. The amount of effort required will be "
+                                          "indicated on each trial. \n\nSqueeze the hand gripper with effort "
+                                          "corresponding to the indicated level.",
+                                     height=30, pos=[0, 0], wrapWidth=1000, color='white')
+instructions4_txt = visual.TextStim(win=win,
+                                     text="As you squeeze the hand gripper, a bar on the screen will fill up. This "
+                                          "bar shows the amount of effort you are exerting. \n\n- If you reach the "
+                                          "required effort level, you earn the points. \n- If you fail to reach the "
+                                          "required level, you lose points.",
+                                     height=30, pos=[0, 0], wrapWidth=1000, color='white')
+instructions5_txt = visual.TextStim(win=win,
+                                     text="Your goal is to accumulate as many points as possible. Make your decisions "
+                                          "wisely and exert the right amount of effort. \n\nGood luck!",
+                                     height=30, pos=[0, 0], wrapWidth=1000, color='white')
 thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=50, pos=[0, 0], color='white')
 
-effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 100), lineColor='grey', fillColor=None)
+effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 50), lineColor='grey', fillColor=None)
 effort_fill = visual.Rect(win, width=120, height=int(info['effort'] / 10.0 * 320),
-                          pos=(100, 100 - 160 + int(info['effort'] / 10.0 * 320) / 2), lineColor=None,
+                          pos=(100, 50 - 160 + int(info['effort'] / 10.0 * 320) / 2), lineColor=None,
                           fillColor='lightblue')
 effort_fill_dynamic = visual.Rect(win, width=120, fillColor='darkblue', lineColor=None)
-effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -80), color='white', height=22)
+effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -130), color='white', height=22)
 
 reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-120, 100), color='white', height=42,
                               bold=True)
@@ -109,8 +133,8 @@ reject_button_txt = visual.TextStim(win=win, text='REJECT', height=accept_button
                                     bold=True)
 reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos,
                           fillColor='red', opacity=0.5)
-squeeze_txt = visual.TextStim(win=win, text='You have accepted the offer. Squeeze the grip device until the bar is '
-                                            'filled up to the threshold!', height=30, pos=[0, 300], color='white')
+squeeze_txt = visual.TextStim(win=win, text='Squeeze the grip device until the bar is filled up to the threshold!',
+                              height=30, pos=[0, 300], color='white', wrapWidth=1000)
 
 
 ###################################
@@ -134,7 +158,7 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 
     # update stimuli
     effort_fill.height = int(info['effort'] / 10.0 * 320)
-    effort_fill.pos = (100, 100 - 160 + int(info['effort'] / 10.0 * 320) / 2)
+    effort_fill.pos = (100, 50 - 160 + int(info['effort'] / 10.0 * 320) / 2)
     effort_text.text = f"Effort: {info['effort']}"
     reward_text.text = f"{info['reward']} Points"
 
@@ -189,16 +213,21 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
     if response == 'accepted':
         success = None
         while success is None:
+            effort_bar_bottom_y = effort_outline.pos[1] - (effort_outline.height / 2)
             mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
 
             # calculate the dynamic height of the dark blue bar based on mouse position
-            dynamic_height = max(min(mouse_y, 320), 0)
+            # ensure that the height cannot exceed the total height of the effort bar (320 in this case)
+            dynamic_height = max(min(mouse_y - effort_bar_bottom_y, 320), 0)
             effort_fill_dynamic.height = dynamic_height
-            effort_fill_dynamic.pos = (100, 100 - 160 + dynamic_height / 2)
+            effort_fill_dynamic.pos = (100, effort_bar_bottom_y + dynamic_height / 2)
 
             stimuli = [squeeze_txt, effort_outline, effort_fill, effort_fill_dynamic, effort_text]
             draw_all_stimuli(stimuli)
             win.flip()
+
+            if effort_fill_dynamic.height > effort_fill.height:
+                success = True
 
     # get updated info dict back out
     return info
@@ -225,7 +254,52 @@ while not mouse.isPressedIn(next_button):
     draw_all_stimuli(stimuli)
     win.flip(), core.wait(0.05)
 
-stimuli = [welcome2_txt, next_button, next_button_txt]
+# CHANGE INSTRUCTION SCREENS TO DISPLAY THE ACTUAL STIMULI ETC!!!!!!
+stimuli = [instructions1_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_glow.draw()
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
+core.wait(0.5)
+
+stimuli = [instructions2_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_glow.draw()
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
+core.wait(0.5)
+
+stimuli = [instructions3_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_glow.draw()
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
+core.wait(0.5)
+
+stimuli = [instructions4_txt, next_button, next_button_txt]
+draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+while not mouse.isPressedIn(next_button):
+    # check if the mouse is hovering over the button
+    if next_button.contains(mouse):
+        next_glow.draw()
+    # draw all stimuli and flip the window
+    draw_all_stimuli(stimuli)
+    win.flip(), core.wait(0.05)
+core.wait(0.5)
+
+stimuli = [instructions5_txt, next_button, next_button_txt]
 draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
 while not mouse.isPressedIn(next_button):
     # check if the mouse is hovering over the button

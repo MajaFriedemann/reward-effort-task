@@ -81,7 +81,7 @@ win = visual.Window(
 # CREATE STIMULI
 ###################################
 next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -250), fillColor='mediumspringgreen')
-next_button_txt = visual.TextStim(win=win, text='NEXT', height=18, pos=next_button.pos, color='black', bold=True)
+next_button_txt = visual.TextStim(win=win, text='NEXT', height=20, pos=next_button.pos, color='black', bold=True)
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=90, pos=[0, 40], color='white',
                               wrapWidth=800)
@@ -242,7 +242,7 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
                 reward_text.text = f"Well done! \n\n+ {info['reward']} Points"
                 stimuli = [effort_outline, effort_fill, effort_fill_dynamic, effort_text, reward_text]
                 draw_all_stimuli(stimuli)
-                win.flip(), core.wait(1.8)
+                win.flip(), core.wait(1.6)
 
     # get updated info dict back out
     return info

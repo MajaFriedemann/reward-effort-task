@@ -409,7 +409,7 @@ class BioPac:
                 raise Exception("Error in mpydev: failed to obtain a sample from the MP150: %s" % result)
 
             # Check if the new sample is in fact new.
-            if data != self._newestsample:
+            if numpy.any(numpy.array(data) != self._newestsample):
                 # Update the internal newest sample.
                 self._newestsample = copy.deepcopy(data)
 

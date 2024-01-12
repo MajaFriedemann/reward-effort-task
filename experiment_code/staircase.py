@@ -5,10 +5,15 @@ import os
 import numpy as np
 from psychopy import gui, visual, core, data, event, logging, misc, clock
 from psychopy.hardware import keyboard
+from mpydev import BioPac
 
 ###################################
 # SESSION INFORMATION
 ###################################
+DUMMY = False  # set this to true to use the mouse instead of the hand grippers
+
+print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
+
 # Pop up asking for participant number, session, age, and gender
 expInfo = {'participant nr': '',
            'session (x/y/s)': '',
@@ -26,6 +31,11 @@ if not dlg.OK:
 ###################################
 # SET EXPERIMENT VARIABLES
 ###################################
+if not DUMMY:
+    mp = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
+else:
+    mp = 1
+
 # variables in gv are just used to structure the task
 gv = dict(
     max_n_trials=5
@@ -72,7 +82,7 @@ win = visual.Window(
     gammaErrorPolicy='ignore',
     size=[1920, 1080],  # set correct monitor size
     fullscr=True,
-    screen=0,
+    screen=1,
     allowGUI=True, allowStencil=False,
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
@@ -142,20 +152,33 @@ squeeze_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the 
 ###################################
 # FUNCTIONS
 ###################################
+# add this in to allow exiting the experiment when we are in full screen mode
+def exit_q(key_list=None):
+    # this just checks if anything has been pressed - it doesn't wait
+    if key_list is None:
+        key_list = ['q']
+    keys = event.getKeys(keyList=key_list)
+    res = len(keys) > 0
+    if res:
+        if 'q' in keys:
+            win.close()
+            core.quit()
+    return res
+
 # draw all stimuli on win flip
 def draw_all_stimuli(stimuli):
     for stimulus in stimuli:
         stimulus.draw()
 
 def display_instructions(stimuli, mouse):
-    draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+    draw_all_stimuli(stimuli), win.flip(), exit_q(), core.wait(0.2)
     while not mouse.isPressedIn(next_button):
         # check if the mouse is hovering over the button
         if next_button.contains(mouse):
             next_glow.draw()
         # draw all stimuli and flip the window
         draw_all_stimuli(stimuli)
-        win.flip(), core.wait(0.05)
+        win.flip(), exit_q(), core.wait(0.05)
     core.wait(0.5)
 
 # calculate net value
@@ -165,7 +188,7 @@ def calculate_net_value(reward, effort, k):
 # do trial and estimate k
 def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt,
              reject_button, reject_button_txt):
-    win.flip(), core.wait(0.5)  # blank screen in between trials
+    win.flip(), exit_q(), core.wait(0.5)  # blank screen in between trials
 
     # update stimuli
     effort_fill.height = int(info['effort'] / 10.0 * 320)
@@ -176,7 +199,7 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
     # draw all stimuli
     stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
                reject_button_txt]
-    draw_all_stimuli(stimuli), win.flip(), core.wait(0.2)
+    draw_all_stimuli(stimuli), win.flip(), exit_q(), core.wait(0.2)
 
     # get participant response
     response = None
@@ -202,7 +225,7 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
                 response = 'rejected'
 
         # Draw all stimuli and flip the window
-        draw_all_stimuli(stimuli), core.wait(0.05), win.flip()
+        draw_all_stimuli(stimuli), core.wait(0.05), win.flip(), exit_q()
 
     # update k based on response
     # adaptive step size using logarithmic decay
@@ -235,14 +258,14 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 
             stimuli = [squeeze_txt, effort_outline, effort_fill, effort_fill_dynamic, effort_text]
             draw_all_stimuli(stimuli)
-            win.flip()
+            win.flip(), exit_q()
 
             if effort_fill_dynamic.height > effort_fill.height:
                 success = True
                 reward_text.text = f"Well done! \n\n+ {info['reward']} Points"
                 stimuli = [effort_outline, effort_fill, effort_fill_dynamic, effort_text, reward_text]
                 draw_all_stimuli(stimuli)
-                win.flip(), core.wait(1.6)
+                win.flip(), exit_q(), core.wait(1.6)
 
     # get updated info dict back out
     return info
@@ -253,6 +276,29 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 ###################################
 # EXPERIMENT
 ###################################
+# start the hand gripper recording
+if not DUMMY:
+    mp.start_recording()
+
+
+
+# TRYING OUT THE HAND GRIPPERS!!!!!!!!!!!!!!
+text1 = visual.TextStim(win, text='', color='white', pos=(0, 30))
+text2 = visual.TextStim(win, text='', color='white', pos=(0, -30))
+while True:
+    sample = mp.sample()
+    text1.setText("Left gripper = %.3f" % sample[0])
+    text2.setText("Right gripper = %.3f" % sample[1])
+    text1.draw()
+    text2.draw()
+    win.flip(), exit_q()
+    core.wait(0.1)
+
+
+
+
+
+
 # initialise clock and mouse
 globalClock = core.Clock()
 mouse = event.Mouse()
@@ -292,7 +338,7 @@ core.wait(0.5)
 
 # thank you
 thanks_txt.draw()
-win.flip()
+win.flip(), exit_q()
 core.wait(5)
 
 # close window

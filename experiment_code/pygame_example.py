@@ -30,7 +30,7 @@ font = pygame.font.Font(pygame.font.get_default_font(), 24)
 
 # Start communication with a BioPac MP150 device.
 if not DUMMY:
-    mp = BioPac("MP150", n_channels=3, samplerate=200, logfile="test", overwrite=True)
+    mp = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
 
 
 # # # # #
@@ -54,7 +54,7 @@ while not quited:
         sample = 16 * [0.0]
 
     # Render text.
-    textsurf = font.render("sample = %.3f, %.3f, %.3f" % (sample[0], sample[1], sample[2]), False, (255,255,255))
+    textsurf = font.render("sample = %.3f, %.3f" % (sample[0], sample[1]), False, (255,255,255))
     blitpos = (int(RES[0]/2 - textsurf.get_width()/2), int(RES[1]/2 - textsurf.get_height()/2))
     
     # Blit text to the display Surface.

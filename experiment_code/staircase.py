@@ -10,7 +10,7 @@ from mpydev import BioPac
 ###################################
 # SESSION INFORMATION
 ###################################
-DUMMY = False  # set this to true to use the mouse instead of the hand grippers
+DUMMY = True  # set this to true to use the mouse instead of the hand grippers
 
 print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
 
@@ -95,6 +95,10 @@ next_button_txt = visual.TextStim(win=win, text='NEXT', height=20, pos=next_butt
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=90, pos=[0, 40], color='white',
                               wrapWidth=800)
+calibration1_txt = visual.TextStim(win=win,
+                                     text="In this task, you will be asked to squeeze a hand gripper. \n\nPlease "
+                                          "take the hand gripper........... blubb.",  # MAJA
+                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
 instructions1_txt = visual.TextStim(win=win,
                                      text="In this task, you will be offered points in "
                                           "exchange for exerting effort. \n\nYour goal is to decide whether the points "
@@ -186,7 +190,7 @@ def calculate_net_value(reward, effort, k):
     return reward - k * effort ** 2
 
 # do trial and estimate k
-def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt,
+def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt,
              reject_button, reject_button_txt):
     win.flip(), exit_q(), core.wait(0.5)  # blank screen in between trials
 
@@ -248,11 +252,16 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
         success = None
         while success is None:
             effort_bar_bottom_y = effort_outline.pos[1] - (effort_outline.height / 2)
-            mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
 
-            # calculate the dynamic height of the dark blue bar based on mouse position
+            if DUMMY:
+                # calculate the dynamic height of the dark blue bar based on mouse position
+                mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
+                dynamic_height = max(min(mouse_y - effort_bar_bottom_y, 320), 0)
+            else:
+                # calculate the dynamic height of the dark blue bar based on hand gripper
+                dynamic_height = max(min(effort_bar_bottom_y + mp.sample()[0] * 110, 320), 0)
+
             # ensure that the height cannot exceed the total height of the effort bar (320 in this case)
-            dynamic_height = max(min(mouse_y - effort_bar_bottom_y, 320), 0)
             effort_fill_dynamic.height = dynamic_height
             effort_fill_dynamic.pos = (100, effort_bar_bottom_y + dynamic_height / 2)
 
@@ -270,7 +279,7 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
     # get updated info dict back out
     return info
 
-    # CONSIDER ADDING AN EARLY STOPPING RULE!!!
+    # CONSIDER ADDING AN EARLY STOPPING RULE!!! MAJA
 
 
 ###################################
@@ -280,25 +289,6 @@ def do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_
 if not DUMMY:
     mp.start_recording()
 
-
-
-# TRYING OUT THE HAND GRIPPERS!!!!!!!!!!!!!!
-text1 = visual.TextStim(win, text='', color='white', pos=(0, 30))
-text2 = visual.TextStim(win, text='', color='white', pos=(0, -30))
-while True:
-    sample = mp.sample()
-    text1.setText("Left gripper = %.3f" % sample[0])
-    text2.setText("Right gripper = %.3f" % sample[1])
-    text1.draw()
-    text2.draw()
-    win.flip(), exit_q()
-    core.wait(0.1)
-
-
-
-
-
-
 # initialise clock and mouse
 globalClock = core.Clock()
 mouse = event.Mouse()
@@ -307,6 +297,14 @@ win.mouseVisible = True
 # welcome
 stimuli = [welcome_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
+
+# calibration of hand grippers
+# add hand gripper calibration here!!! MAJA
+# think about how to do this! make them squezze as hard as they can 3 times- each time asking to squeeze harder
+# then take the average of squeezes 2 and 3 and use that as the threshold for the effort bar
+# think about whether to use peak effort or fit some sigmoid function to the data and use the inflection point as the threshold
+# sample once in the beginning without any force, then subtract that sample from all future samples to have the zero baseline
+
 
 # instructions
 stimuli = [instructions1_txt, next_button, next_button_txt]
@@ -324,9 +322,11 @@ display_instructions(stimuli, mouse)
 stimuli = [instructions5_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
 
+
+
 # actual trials
 for trial in range(gv['max_n_trials']):
-    info = do_trial(win, mouse, info, effort_outline, effort_fill, effort_text, reward_text, accept_button,
+    info = do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
                     accept_button_txt, reject_button, reject_button_txt)
     info['trial_count'] += 1
     dataline = ','.join([str(info[v]) for v in log_vars])

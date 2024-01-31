@@ -10,7 +10,7 @@ from mpydev import BioPac
 ###################################
 # SESSION INFORMATION
 ###################################
-DUMMY = True  # set this to true to use the mouse instead of the hand grippers
+DUMMY = False  # set this to true to use the mouse instead of the hand grippers
 
 print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
 
@@ -57,6 +57,12 @@ info = dict(
     age=expInfo['age'],
     gender=expInfo['gender (f/m/o)'],
     handedness=expInfo['handedness (l/r/b)'],
+
+    gripper_baseline=None,
+    max_effort_calibration_1=None,
+    max_effort_calibration_2=None,
+    max_effort_calibration_3=None,
+    max_effort=None,
 
     trial_count=0,
     reward=18,  # initial reward
@@ -201,7 +207,8 @@ def calculate_net_value(reward, effort, k):
 def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
              accept_button_txt,
              reject_button, reject_button_txt):
-    win.flip(), exit_q(), core.wait(0.5)  # blank screen in between trials
+    gripper_zero_baseline = info['gripper_baseline']
+    max_effort = info['max_effort']
 
     # update stimuli
     effort_fill.height = int(info['effort'] / 10.0 * 320)
@@ -263,16 +270,17 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
 
         while success is None:
             effort_bar_bottom_y = effort_outline.pos[1] - (effort_outline.height / 2)
-
             if DUMMY:
                 # calculate the dynamic height of the dark blue bar based on mouse position
                 mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
                 dynamic_height = max(min(mouse_y - effort_bar_bottom_y, 320), 0)
             else:
-                # calculate the dynamic height of the dark blue bar based on hand gripper
-                dynamic_height = max(min(effort_bar_bottom_y + mp.sample()[0] * 110, 320), 0)
+                # calculate the dynamic height of the dark blue bar based on current effort
+                current_effort = mp.sample()[0] - gripper_zero_baseline
+                effort_ratio = current_effort / max_effort
+                dynamic_height = max(min(effort_ratio * 320, 320), 0)
 
-            # ensure that the height cannot exceed the total height of the effort bar (320 in this case)
+                # ensure that the height cannot exceed the total height of the effort bar (320 in this case)
             effort_fill_dynamic.height = dynamic_height
             effort_fill_dynamic.pos = (100, effort_bar_bottom_y + dynamic_height / 2)
 
@@ -281,7 +289,7 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
                 if start_time is None:  # Condition just met
                     start_time = core.getTime()
                 elapsed_time = core.getTime() - start_time
-                time_left = 2 - elapsed_time
+                time_left = 1 - elapsed_time
                 if time_left <= 0:  # Countdown finished
                     success = True
                     break  # Exit the while loop to declare success
@@ -310,29 +318,40 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
     # CONSIDER ADDING AN EARLY STOPPING RULE!!! MAJA
 
 
-# draw graph with efforts
-def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts,
-                            prev_times, efforts, times, calibration_text):
+def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts, prev_times,
+                            efforts, times, calibration_text):
     # Draw graph axes
     visual.Line(win, start=(graph_start_x, graph_base_y), end=(graph_start_x + graph_length, graph_base_y), lineWidth=2,
                 lineColor='white').draw()  # X-axis
     visual.Line(win, start=(graph_start_x, graph_base_y), end=(graph_start_x, graph_base_y + graph_height), lineWidth=2,
                 lineColor='white').draw()  # Y-axis
 
-    # draw previous efforts
-    if prev_efforts:  # Check if there are previous efforts to draw
-        for i in range(1, len(prev_efforts)):
-            start_point = [graph_start_x + prev_times[i - 1] * (graph_length / 6),
-                           graph_base_y + prev_efforts[i - 1] * (graph_height / 100)]
-            end_point = [graph_start_x + prev_times[i] * (graph_length / 6),
-                         graph_base_y + prev_efforts[i] * (graph_height / 100)]
-            visual.Line(win, start=start_point, end=end_point, lineWidth=4, lineColor='lightblue').draw()
+    # Function to calculate point coordinates
+    def calculate_point(time, effort, time_scale, effort_scale):
+        x = graph_start_x + time * time_scale
+        y = graph_base_y + effort * effort_scale
+        return [x, y]
 
-    # Ensure current efforts start drawing only after recording begins
-    for i in range(1, len(efforts)):
-        start_point = [graph_start_x + times[i - 1] * (graph_length / 6),
-                       graph_base_y + efforts[i - 1] * (graph_height / 100)]
-        end_point = [graph_start_x + times[i] * (graph_length / 6), graph_base_y + efforts[i] * (graph_height / 100)]
+    # Time and effort scales
+    time_scale = graph_length / 4
+    effort_scale = graph_height / 5
+
+    # Draw previous efforts
+    for i in range(len(prev_efforts)):
+        if i == 0:
+            start_point = calculate_point(0, 0, time_scale, effort_scale)  # Start from origin
+        else:
+            start_point = calculate_point(prev_times[i - 1], prev_efforts[i - 1], time_scale, effort_scale)
+        end_point = calculate_point(prev_times[i], prev_efforts[i], time_scale, effort_scale)
+        visual.Line(win, start=start_point, end=end_point, lineWidth=2, lineColor='lightblue').draw()
+
+    # Draw current efforts
+    for i in range(len(efforts)):
+        if i == 0:
+            start_point = calculate_point(0, 0, time_scale, effort_scale)  # Start from origin
+        else:
+            start_point = calculate_point(times[i - 1], efforts[i - 1], time_scale, effort_scale)
+        end_point = calculate_point(times[i], efforts[i], time_scale, effort_scale)
         visual.Line(win, start=start_point, end=end_point, lineWidth=4, lineColor='red').draw()
 
     draw_all_stimuli([calibration_text])
@@ -340,24 +359,45 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
     win.flip()
 
 
-# calibration of hand grippers for 3 trials
-def do_calibration(win, mouse, DUMMY, mp, calibration_text):
-    max_strength = 0  # MAJA - here display some instructions to not touch the grippers, then do a countdown,and then sample once to have the zero baseline of the grippers!
 
+# calibration of hand grippers for 3 trials
+# takes the average of average effort in a half-second window around the peak effort of trials 2 and 3
+def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
     graph_start_x = -200
     graph_base_y = -200
     graph_length = 400  # Total length of the x-axis
     graph_height = 250  # Total height of the y-axis
 
-    prev_efforts = []  # List to store previous trial's efforts
-    prev_times = []  # List to store previous trial's times
+    max_efforts = []  # List to store max_trial_effort for each trial
+    efforts = []  # List to store current trial's effort values
+    times = []  # List to store current trial's time values
+
+    # Display initial instructions
+    calibration_text.text = "Do not touch the hand grippers!"
+    draw_all_stimuli([calibration_text])
+    win.flip(), exit_q(), core.wait(2)  # Display instructions for 2 seconds
+
+    # Countdown: 3, 2, 1
+    for countdown in range(3, 0, -1):
+        calibration_text.text = str(countdown)
+        draw_all_stimuli([calibration_text])
+        # Save the mp.sample()[0] from second 3 as the gripper zero baseline
+        if not DUMMY and countdown == 3:
+            gripper_zero_baseline = mp.sample()[0]
+            info['gripper_baseline'] = gripper_zero_baseline
+        win.flip()
+        core.wait(1)
 
     for trial in range(1, 4):  # Conduct 3 calibration trials
-        efforts = []  # List to store current trial's effort values
-        times = []  # List to store current trial's time values
-
+        prev_efforts = efforts.copy()  # Copy the previous trial's efforts
+        prev_times = times.copy()  # Copy the previous trial's times
+        efforts = []  # Reset the current trial's efforts
+        times = []  # Reset the current trial's times
         # Display initial instructions
-        calibration_text.text = f"Trial {trial}: When ready, squeeze as hard as you can!"
+        if trial == 1:
+            calibration_text.text = f"Trial {trial}: When ready, squeeze as hard as you can!"
+        else:
+            calibration_text.text = f"Trial {trial}: Try to squeeze harder than on your last trial!"
         visual.Line(win, start=(graph_start_x, graph_base_y), end=(graph_start_x + graph_length, graph_base_y),
                     lineWidth=2,
                     lineColor='white').draw()
@@ -375,36 +415,40 @@ def do_calibration(win, mouse, DUMMY, mp, calibration_text):
         mouse_y_start = mouse.getPos()[1]
         while not recording_started:
             if DUMMY:
-                effort = (mouse.getPos()[1] - mouse_y_start)/100
-                print(effort)
+                effort = mouse.getPos()[1] - mouse_y_start
             else:
-                effort = max(min((mp.sample()[0] * 110), 320), 0) / 320 * 100
+                current_effort = mp.sample()[0]
+                effort = current_effort - gripper_zero_baseline
 
-            if effort > 1:  # Threshold to start recording
+            if effort > 0.1:  # Threshold to start recording
                 recording_started = True
                 start_time = core.getTime()
             core.wait(0.1)
 
         # Begin recording for 4 seconds after effort threshold is exceeded
-        while core.getTime() - start_time < 4:
-            current_time = core.getTime() - start_time
+        recording_second_duration = 4
+        while core.getTime() - start_time < recording_second_duration:
             if DUMMY:
-                mouse_y = mouse.getPos()[1]
-                effort = mouse_y/10
+                effort = mouse.getPos()[1] - mouse_y_start
             else:
-                effort = max(min((mp.sample()[0] * 110), 320), 0) / 320 * 100
-
+                current_effort = mp.sample()[0]
+                effort = current_effort - gripper_zero_baseline
             efforts.append(effort)
+            current_time = core.getTime() - start_time
             times.append(current_time)
 
             # Draw the graph with the current and previous efforts
             draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts,
                                     prev_times, efforts, times, calibration_text)
 
-            max_strength = max(max_strength, effort)  # Update max strength
-
-        # Update the previous trial's data for the next trial
-        prev_efforts, prev_times = efforts.copy(), times.copy()
+        # Calculate the length of a 1-second window and its boundaries
+        max_effort_index = efforts.index(max(efforts))
+        quarter_second_window_length = int((len(efforts) / recording_second_duration) / 4)
+        window_start = max(0, max_effort_index - quarter_second_window_length)
+        window_end = min(len(efforts), max_effort_index + quarter_second_window_length + 1)
+        # Calculate the average effort within the 1-second window around the maximum effort
+        max_trial_effort = sum(efforts[window_start:window_end]) / (window_end - window_start)
+        max_efforts.append(max_trial_effort)
 
         # Rest period message
         calibration_text.text = "Trial completed. Relax for a moment."
@@ -412,15 +456,19 @@ def do_calibration(win, mouse, DUMMY, mp, calibration_text):
                                 efforts, times, calibration_text)
         core.wait(3)  # Rest period
 
-    # Final feedback with the maximum strength achieved
-    calibration_text.text = f"Calibration complete. Max effort: {max_strength:.2f}%."
+    # Finish calibration
+    # Calculate max_effort as the average of max_trial_effort for trials 2 and 3
+    max_effort = sum(max_efforts[1:3]) / 2  # Trials 2 and 3
+    info['max_effort_calibration_1'] = max_efforts[0]
+    info['max_effort_calibration_2'] = max_efforts[1]
+    info['max_effort_calibration_3'] = max_efforts[2]
+    info['max_effort'] = max_effort
+
+    calibration_text.text = f"Well done!"
     draw_all_stimuli([calibration_text])
-    win.flip()
-    exit_q()
-    core.wait(3)
+    win.flip(), exit_q(), core.wait(3)
 
-    return max_strength
-
+    return info
 
 
 ###################################
@@ -438,13 +486,6 @@ win.mouseVisible = True
 # welcome
 stimuli = [welcome_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
-
-# calibration of hand grippers add hand gripper calibration here!!! MAJA think about how to do this! make them
-# squezze as hard as they can 3 times- each time asking to squeeze harder then take the average of squeezes 2 and 3
-# and use that as the threshold for the effort bar think about whether to use peak effort or fit some sigmoid
-# function to the data and use the inflection point as the threshold sample once in the beginning without any force,
-# then subtract that sample from all future samples to have the zero baseline
-
 
 # # instructions
 # stimuli = [instructions1_txt, next_button, next_button_txt]
@@ -464,7 +505,7 @@ display_instructions(stimuli, mouse)
 
 
 # calibration of hand grippers
-do_calibration(win, mouse, DUMMY, mp, calibration_txt)
+info = do_calibration(win, mouse, info, DUMMY, mp, calibration_txt)
 
 # actual trials
 for trial in range(gv['max_n_trials']):

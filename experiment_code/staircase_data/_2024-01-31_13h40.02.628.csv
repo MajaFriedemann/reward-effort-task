@@ -1,3 +1,0 @@
-expName,curec_ID,session,session_nr,date,end_date,participant,age,gender,handedness,max_effort_calibration_1,max_effort_calibration_2,max_effort_calibration_3,max_effort,trial_count,reward,effort,estimated_k,estimated_net_value,participant_response
-pgACC-TUS-staircase,,,,2024-01-31_13h40.02.628,None,,,,,73.11111111111111,88.76923076923077,68.88235294117646,78.82579185520362,1,18,6,0.5,0.0,None
-pgACC-TUS-staircase,,,,2024-01-31_13h40.02.628,None,,,,,73.11111111111111,88.76923076923077,68.88235294117646,78.82579185520362,2,8,2,0.5,6.0,None

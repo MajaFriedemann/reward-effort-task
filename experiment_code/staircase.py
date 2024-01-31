@@ -10,12 +10,11 @@ from mpydev import BioPac
 ###################################
 # SESSION INFORMATION
 ###################################
-DUMMY = False  # set this to true to use the mouse instead of the hand grippers
-
 print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
 
 # Pop up asking for participant number, session, age, and gender
 expInfo = {'participant nr': '',
+           'dummy (y/n)': '',
            'session (x/y/s)': '',
            'session nr': '',
            'age': '',
@@ -31,10 +30,12 @@ if not dlg.OK:
 ###################################
 # SET EXPERIMENT VARIABLES
 ###################################
-if not DUMMY:
-    mp = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
-else:
+if expInfo['dummy (y/n)'] == 'y':
+    DUMMY = True
     mp = 1
+else:
+    DUMMY = False
+    mp = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
 
 # variables in gv are just used to structure the task
 gv = dict(
@@ -70,6 +71,8 @@ info = dict(
     estimated_k=0.5,  # initial estimate
     estimated_net_value=18 - 0.5 * 6 ** 2,  # initial estimate
     participant_response=None
+
+    # consider what info to save MAJA
 )
 
 # logging
@@ -101,40 +104,45 @@ next_button_txt = visual.TextStim(win=win, text='NEXT', height=20, pos=next_butt
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=90, pos=[0, 40], color='white',
                               wrapWidth=800)
-
 instructions_calibration_txt = visual.TextStim(win=win,
-                                               text="In this task, you will be asked to squeeze a hand gripper. \n\nPlease "
-                                                    "take the hand gripper........... blubb.",  # MAJA
+                                               text="In this task, you will be asked to squeeze a hand gripper. \n\n "
+                                                    "When asked to do so, please "
+                                                    "take the hand gripper in the hand that you are not currently "
+                                                    "using for the computer mouse "
+                                                    "and ensure you have a firm grip.\n\n"
+                                                    "We will guide you through the process. \nFor now, please refrain "
+                                                    "from touching the gripper as it needs to be calibrated first.",
                                                height=40, pos=[0, 80], wrapWidth=800, color='white')
+calibration_done_txt = visual.TextStim(win=win,
+                                       text="The calibration process is now complete. \n\n Please take the hand "
+                                            "gripper in the hand that you are not currently using for the computer "
+                                            "mouse and ensure you have a firm grip.\n\n"
+                                            "When you are ready to get squeezing, click the 'Next' button.",
+                                       height=40, pos=[0, 80], wrapWidth=800, color='white')
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000)
-
 instructions1_txt = visual.TextStim(win=win,
-                                    text="In this task, you will be offered points in "
-                                         "exchange for exerting effort. \n\nYour goal is to decide whether the points "
-                                         "offered are worth the effort required.",
+                                    text="Now we can start the task! You will earn points for your effort. \n\nYour objective "
+                                         "is to evaluate if the points offered are worth the effort required.",
                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
 instructions2_txt = visual.TextStim(win=win,
-                                    text="On each trial, you will be presented with an offer of points. Consider "
-                                         "carefully if the points are worth the effort required. \n\nIf you think "
-                                         "it's worth it, click 'Accept'. \n\nIf you think it's not, click 'Reject'.",
+                                    text="Each trial presents an offer of points. Carefully assess if the points "
+                                         "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if it's not.",
                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
 instructions3_txt = visual.TextStim(win=win,
-                                    text="When you click 'Accept', you will use the hand gripper to exert effort. "
-                                         "\n\nThe amount of effort required will be "
-                                         "indicated on each trial. \n\nSqueeze the hand gripper with effort "
-                                         "corresponding to the indicated level.",
+                                    text="When you 'Accept', use the hand gripper to exert the specified effort. \n\nMatch "
+                                         "your grip effort to the indicated level and hold it for 1 second. If you do "
+                                         "not reach the required effort within 20 seconds, it counts as a failure and results in a loss.",
                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
+
 instructions4_txt = visual.TextStim(win=win,
-                                    text="As you squeeze the hand gripper, a bar on the screen will fill up. This "
-                                         "bar shows the amount of effort you are exerting. \n\nIf you reach the "
-                                         "required effort level, \nyou earn the points. \n\nIf you fail to reach the "
-                                         "required level, \nyou lose points.",
+                                    text="While gripping, a bar on the screen fills to represent your effort "
+                                         "level. \n\nMeeting the required level for 1 second earns you points. Failing to reach "
+                                         "it within 20 seconds results in a loss. \n\nRemember, every point you earn is worth 1 penny.",
                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
 instructions5_txt = visual.TextStim(win=win,
-                                    text="Your goal is to accumulate \nas many "
-                                         "points as possible. \n\nMake your decisions "
-                                         "wisely and exert \nthe right amount of effort. \n\nLet's begin!",
+                                    text="Your objective is to maximize your point total. \n\nMake thoughtful decisions "
+                                         "and apply the right effort. \n\nLet's begin!",
                                     height=40, pos=[0, 80], wrapWidth=800, color='white')
 thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 40], color='white')
 
@@ -207,6 +215,8 @@ def calculate_net_value(reward, effort, k):
 def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
              accept_button_txt,
              reject_button, reject_button_txt):
+    win.flip(), core.wait(0.5), exit_q()  # blank screen in between trials
+
     gripper_zero_baseline = info['gripper_baseline']
     max_effort = info['max_effort']
 
@@ -315,7 +325,7 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
     # get updated info dict back out
     return info
 
-    # CONSIDER ADDING AN EARLY STOPPING RULE!!! MAJA
+    # consider adding an early stopping rule - MAJA
 
 
 def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts, prev_times,
@@ -334,7 +344,7 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
 
     # Time and effort scales
     time_scale = graph_length / 4
-    effort_scale = graph_height / 5
+    effort_scale = graph_height / 4
 
     # Draw previous efforts
     for i in range(len(prev_efforts)):
@@ -359,10 +369,9 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
     win.flip()
 
 
-
 # calibration of hand grippers for 3 trials
 # takes the average of average effort in a half-second window around the peak effort of trials 2 and 3
-def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
+def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button):
     graph_start_x = -200
     graph_base_y = -200
     graph_length = 400  # Total length of the x-axis
@@ -373,20 +382,23 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
     times = []  # List to store current trial's time values
 
     # Display initial instructions
-    calibration_text.text = "Do not touch the hand grippers!"
-    draw_all_stimuli([calibration_text])
-    win.flip(), exit_q(), core.wait(2)  # Display instructions for 2 seconds
+    calibration_txt.text = "Calilbration in process. Do not touch the hand gripper!"
+    draw_all_stimuli([calibration_txt])
+    win.flip(), exit_q(), core.wait(1)  # Display instructions for 2 seconds
 
     # Countdown: 3, 2, 1
     for countdown in range(3, 0, -1):
-        calibration_text.text = str(countdown)
-        draw_all_stimuli([calibration_text])
+        welcome_txt.text = str(countdown)
+        draw_all_stimuli([welcome_txt, calibration_txt])
         # Save the mp.sample()[0] from second 3 as the gripper zero baseline
         if not DUMMY and countdown == 3:
             gripper_zero_baseline = mp.sample()[0]
             info['gripper_baseline'] = gripper_zero_baseline
         win.flip()
         core.wait(1)
+
+    stimuli = [calibration_done_txt, next_button, next_button_txt]
+    display_instructions(stimuli, mouse)
 
     for trial in range(1, 4):  # Conduct 3 calibration trials
         prev_efforts = efforts.copy()  # Copy the previous trial's efforts
@@ -395,16 +407,16 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
         times = []  # Reset the current trial's times
         # Display initial instructions
         if trial == 1:
-            calibration_text.text = f"Trial {trial}: When ready, squeeze as hard as you can!"
+            calibration_txt.text = f"Trial {trial}: When ready, squeeze as hard as you can!"
         else:
-            calibration_text.text = f"Trial {trial}: Try to squeeze harder than on your last trial!"
+            calibration_txt.text = f"Trial {trial}: Try to squeeze harder than on your last trial!"
         visual.Line(win, start=(graph_start_x, graph_base_y), end=(graph_start_x + graph_length, graph_base_y),
                     lineWidth=2,
                     lineColor='white').draw()
         visual.Line(win, start=(graph_start_x, graph_base_y), end=(graph_start_x, graph_base_y + graph_height),
                     lineWidth=2,
                     lineColor='white').draw()
-        draw_all_stimuli([calibration_text])
+        draw_all_stimuli([calibration_txt])
         win.flip()
         exit_q()
         core.wait(1)  # Short wait to ensure participant is ready
@@ -439,7 +451,7 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
 
             # Draw the graph with the current and previous efforts
             draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts,
-                                    prev_times, efforts, times, calibration_text)
+                                    prev_times, efforts, times, calibration_txt)
 
         # Calculate the length of a 1-second window and its boundaries
         max_effort_index = efforts.index(max(efforts))
@@ -451,9 +463,9 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
         max_efforts.append(max_trial_effort)
 
         # Rest period message
-        calibration_text.text = "Trial completed. Relax for a moment."
+        calibration_txt.text = "Trial completed. Relax for a moment."
         draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, graph_height, prev_efforts, prev_times,
-                                efforts, times, calibration_text)
+                                efforts, times, calibration_txt)
         core.wait(3)  # Rest period
 
     # Finish calibration
@@ -464,8 +476,8 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_text):
     info['max_effort_calibration_3'] = max_efforts[2]
     info['max_effort'] = max_effort
 
-    calibration_text.text = f"Well done!"
-    draw_all_stimuli([calibration_text])
+    welcome_txt.text = f"Well done!"
+    draw_all_stimuli([welcome_txt])
     win.flip(), exit_q(), core.wait(3)
 
     return info
@@ -487,25 +499,31 @@ win.mouseVisible = True
 stimuli = [welcome_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
 
-# # instructions
-# stimuli = [instructions1_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-
-# stimuli = [instructions2_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions3_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions4_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions5_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-
+# calibration instructions
+stimuli = [instructions_calibration_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
 
 # calibration of hand grippers
-info = do_calibration(win, mouse, info, DUMMY, mp, calibration_txt)
+info = do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
+dataline = ','.join([str(info[v]) for v in log_vars])
+datafile.write(dataline + '\n')
+datafile.flush()
+
+# task instructions
+stimuli = [instructions1_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions2_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions3_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions4_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions5_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
 
 # actual trials
 for trial in range(gv['max_n_trials']):
@@ -517,7 +535,15 @@ for trial in range(gv['max_n_trials']):
     datafile.flush()
     info['reward'] = info['next_reward']
     info['effort'] = info['next_effort']
+    dataline = ','.join([str(info[v]) for v in log_vars])
+    datafile.write(dataline + '\n')
+    datafile.flush()
 core.wait(0.5)
+
+# save data
+dataline = ','.join([str(info[v]) for v in log_vars])
+datafile.write(dataline + '\n')
+datafile.flush()
 
 # thank you
 thanks_txt.draw()

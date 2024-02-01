@@ -253,12 +253,11 @@ def draw_points(coins):
         coin.draw()
 
 
-
 # do trial and estimate k
 def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
              accept_button_txt,
              reject_button, reject_button_txt, countdown_txt):
-    win.flip(), core.wait(0.5), exit_q()  # blank screen in between trials
+    win.flip(), core.wait(1), exit_q()  # blank screen in between trials
 
     gripper_zero_baseline = info['gripper_baseline']
     max_effort = info['max_effort']
@@ -439,10 +438,10 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
 # calibration of hand grippers for 3 trials
 # takes the average of average effort in a half-second window around the peak effort of trials 2 and 3
 def do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button):
-    graph_start_x = -200
-    graph_base_y = -200
-    graph_length = 400  # Total length of the x-axis
-    graph_height = 250  # Total height of the y-axis
+    graph_start_x = -300
+    graph_base_y = -280
+    graph_length = 600  # Total length of the x-axis
+    graph_height = 400  # Total height of the y-axis
 
     max_efforts = []  # List to store max_trial_effort for each trial
     efforts = []  # List to store current trial's effort values
@@ -567,29 +566,29 @@ win.mouseVisible = True
 stimuli = [welcome_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
 
-# # calibration instructions
-# stimuli = [instructions_calibration_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
+# calibration instructions
+stimuli = [instructions_calibration_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
 
-# # calibration of hand grippers
-# info = do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
-# dataline = ','.join([str(info[v]) for v in log_vars])
-# datafile.write(dataline + '\n')
-# datafile.flush()
-#
-# # task instructions
-# stimuli = [instructions1_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions2_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions3_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions4_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-# instructions4_txt.draw(), win.flip(), exit_q(), core.wait(1)
+# calibration of hand grippers
+info = do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
+dataline = ','.join([str(info[v]) for v in log_vars])
+datafile.write(dataline + '\n')
+datafile.flush()
+
+# task instructions
+stimuli = [instructions1_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions2_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions3_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions4_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+instructions4_txt.draw(), win.flip(), exit_q(), core.wait(1)
 
 # actual trials
 for trial in range(gv['max_n_trials']):

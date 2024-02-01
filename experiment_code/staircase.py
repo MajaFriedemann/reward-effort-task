@@ -6,6 +6,8 @@ import numpy as np
 from psychopy import gui, visual, core, data, event, logging, misc, clock
 from psychopy.hardware import keyboard
 from mpydev import BioPac
+import random
+import math
 
 ###################################
 # SESSION INFORMATION
@@ -19,7 +21,6 @@ expInfo = {'participant nr': '',
            'session nr': '',
            'age': '',
            'gender (f/m/o)': '',
-           'handedness (l/r/b)': ''
            }
 expName = 'pgACC-TUS-staircase'
 curecID = ''
@@ -39,7 +40,8 @@ else:
 
 # variables in gv are just used to structure the task
 gv = dict(
-    max_n_trials=5
+    max_n_trials=5,
+    effort_bar_height=320,
 )
 
 ###################################
@@ -57,22 +59,34 @@ info = dict(
     participant=expInfo['participant nr'],
     age=expInfo['age'],
     gender=expInfo['gender (f/m/o)'],
-    handedness=expInfo['handedness (l/r/b)'],
 
     gripper_baseline=None,
+    # this is the gripper 0 point, for some reason it is often not precisely 0 so we meausre it once in the beginning and then subtract it from all other measurements
     max_effort_calibration_1=None,
+    # average effort in a half-second window around the peak effort for calibration trial 1
     max_effort_calibration_2=None,
+    # average effort in a half-second window around the peak effort for calibration trial 2
     max_effort_calibration_3=None,
-    max_effort=None,
+    # average effort in a half-second window around the peak effort for calibration trial 3
+    max_effort=None,  # average of max_effort_calibration_2 and max_effort_calibration_3
+    max_effort_baseline_corrected=None,
+    # max_effort minus gripper_baseline so it is comparable across sessions / participants
 
-    trial_count=0,
-    reward=18,  # initial reward
-    effort=6,  # initial effort
-    estimated_k=0.5,  # initial estimate
-    estimated_net_value=18 - 0.5 * 6 ** 2,  # initial estimate
-    participant_response=None
-
-    # consider what info to save MAJA
+    trial_count=0,  # trial counter
+    reward_offer=18,  # trial reward offer (initialised at 18)
+    next_reward_offer=None,  # reward offer for next trial
+    reward_earned=0,  # reward earned on trial
+    total_reward=0,  # total reward earned so far
+    effort_offer=6,  # trial effort offer (initialised at 6)
+    next_effort_offer=None,  # effort offer for next trial
+    effort_expended=None,  # actual effort expended on trial during the 1 second where effort is above the threshold
+    estimated_k=0.5,
+    # estimated k value (initialised at 0.5) - this will be used to calculate appropriate reward and effort offers
+    estimated_net_value=lambda info: info['reward_offer'] - info['estimated_k'] * info['effort_offer'] ** 2,
+    participant_response=None,  # participant response (accepted or rejected)
+    participant_choice_response_time=None,  # time taken to make a choice (accept or reject)
+    participant_effort_response_time=None,
+    # time taken to exert the required effort (if not within 20 seconds, participant looses 1 point)
 )
 
 # logging
@@ -99,65 +113,59 @@ win = visual.Window(
 ###################################
 # CREATE STIMULI
 ###################################
-next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -250), fillColor='mediumspringgreen')
-next_button_txt = visual.TextStim(win=win, text='NEXT', height=20, pos=next_button.pos, color='black', bold=True)
+next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -270), fillColor='mediumspringgreen')
+next_button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=next_button.pos, color='black', bold=True)
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='mediumspringgreen', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=90, pos=[0, 40], color='white',
                               wrapWidth=800)
 instructions_calibration_txt = visual.TextStim(win=win,
                                                text="In this task, you will be asked to squeeze a hand gripper. \n\n "
                                                     "When asked to do so, please "
-                                                    "take the hand gripper in the hand that you are not currently "
-                                                    "using for the computer mouse "
-                                                    "and ensure you have a firm grip.\n\n"
-                                                    "We will guide you through the process. \nFor now, please refrain "
+                                                    "take the hand gripper and ensure you have a firm grip.\n\n"
+                                                    "We will guide you through the process. \n\nFor now, please refrain "
                                                     "from touching the gripper as it needs to be calibrated first.",
-                                               height=40, pos=[0, 80], wrapWidth=800, color='white')
+                                               height=40, pos=[0, 80], wrapWidth=900, color='white')
 calibration_done_txt = visual.TextStim(win=win,
                                        text="The calibration process is now complete. \n\n Please take the hand "
                                             "gripper in the hand that you are not currently using for the computer "
                                             "mouse and ensure you have a firm grip.\n\n"
-                                            "When you are ready to get squeezing, click the 'Next' button.",
-                                       height=40, pos=[0, 80], wrapWidth=800, color='white')
+                                            "When you are ready to try out how hard you can squeeze, click the 'Next' button.",
+                                       height=40, pos=[0, 80], wrapWidth=900, color='white')
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000)
 instructions1_txt = visual.TextStim(win=win,
-                                    text="Now we can start the task! You will earn points for your effort. \n\nYour objective "
-                                         "is to evaluate if the points offered are worth the effort required.",
-                                    height=40, pos=[0, 80], wrapWidth=800, color='white')
-instructions2_txt = visual.TextStim(win=win,
-                                    text="Each trial presents an offer of points. Carefully assess if the points "
+                                    text="Now you can start earning points for your effort. \n\n"
+                                         "Each trial presents an offer of points and an amount of effort required to "
+                                         "get them. Carefully assess if the points "
                                          "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if it's not.",
-                                    height=40, pos=[0, 80], wrapWidth=800, color='white')
-instructions3_txt = visual.TextStim(win=win,
-                                    text="When you 'Accept', use the hand gripper to exert the specified effort. \n\nMatch "
-                                         "your grip effort to the indicated level and hold it for 1 second. If you do "
-                                         "not reach the required effort within 20 seconds, it counts as a failure and results in a loss.",
-                                    height=40, pos=[0, 80], wrapWidth=800, color='white')
+                                    height=40, pos=[0, 80], wrapWidth=900, color='white')
+instructions2_txt = visual.TextStim(win=win,
+                                    text="When you 'Accept', squeeze the hand gripper to exert the specified effort. \n\n"
+                                         "As you squeeze, a bar on the screen fills to represent your effort "
+                                         "level. \n\nMatch your squeezing effort to the indicated level and hold it for 1 second.",
+                                    height=40, pos=[0, 80], wrapWidth=900, color='white')
 
-instructions4_txt = visual.TextStim(win=win,
-                                    text="While gripping, a bar on the screen fills to represent your effort "
-                                         "level. \n\nMeeting the required level for 1 second earns you points. Failing to reach "
-                                         "it within 20 seconds results in a loss. \n\nRemember, every point you earn is worth 1 penny.",
-                                    height=40, pos=[0, 80], wrapWidth=800, color='white')
-instructions5_txt = visual.TextStim(win=win,
-                                    text="Your objective is to maximize your point total. \n\nMake thoughtful decisions "
-                                         "and apply the right effort. \n\nLet's begin!",
-                                    height=40, pos=[0, 80], wrapWidth=800, color='white')
+instructions3_txt = visual.TextStim(win=win,
+                                    text="Meeting the required level earns you the points offered on that trial. \n\nFailing to reach "
+                                         "it within 20 seconds results in a loss of 1 point. \n\nEvery point is worth 1 penny.",
+                                    height=40, pos=[0, 80], wrapWidth=900, color='white')
+instructions4_txt = visual.TextStim(win=win, text="Let's begin!", height=90, pos=[0, 40], color='white',
+                                    wrapWidth=800)
 thanks_txt = visual.TextStim(win=win, text='Thank you for completing the study!', height=70, pos=[0, 40], color='white')
 
-effort_outline = visual.Rect(win, width=120, height=320, pos=(100, 50), lineColor='grey', fillColor=None)
-effort_fill = visual.Rect(win, width=120, height=int(info['effort'] / 10.0 * 320),
-                          pos=(100, 50 - 160 + int(info['effort'] / 10.0 * 320) / 2), lineColor=None,
+effort_outline = visual.Rect(win, width=120, height=gv['effort_bar_height'], pos=(100, 50), lineColor='grey',
+                             fillColor=None)
+effort_fill = visual.Rect(win, width=120, height=int(info['effort_offer'] / 10.0 * gv['effort_bar_height']),
+                          pos=(100, 50 - 160 + int(info['effort_offer'] / 10.0 * gv['effort_bar_height']) / 2),
+                          lineColor=None,
                           fillColor='lightblue')
 effort_fill_dynamic = visual.Rect(win, width=120, fillColor='darkblue', lineColor=None)
-effort_text = visual.TextStim(win, text=f"Effort: {info['effort']}", pos=(100, -130), color='white', height=22)
+effort_text = visual.TextStim(win, text="Effort \nlevel", pos=(280, 310), color='white', height=42, alignText='left')
 
-reward_text = visual.TextStim(win, text=f"{info['reward']} Points", pos=(-150, 100), color='white', height=42,
-                              bold=True)
+reward_text = visual.TextStim(win, text=f"Points: {info['reward_offer']}", pos=(-200, 250), color='white', height=42)
 
 accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor='springgreen')
-accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=16, pos=accept_button.pos, color='black',
+accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=22, pos=accept_button.pos, color='black',
                                     bold=True)
 accept_glow = visual.Rect(win, width=160, height=70, pos=accept_button.pos, fillColor='springgreen', opacity=0.5)
 
@@ -169,6 +177,7 @@ reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.heigh
                           fillColor='red', opacity=0.5)
 squeeze_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                               height=40, pos=[0, 300], color='white', wrapWidth=2000)
+countdown_txt = visual.TextStim(win, text='Keep going!', pos=(-200, 100), color='white', height=42)
 
 
 ###################################
@@ -211,28 +220,59 @@ def calculate_net_value(reward, effort, k):
     return reward - k * effort ** 2
 
 
+# draw points
+def create_points(win, num_points, start_x=-200, start_y=20):
+    coin_radius = 20  # Size of the coins
+    coin_spacing_horizontal = 40  # Horizontal spacing between columns
+    coin_spacing_vertical = 10    # Vertical spacing between coins in a stack
+    max_coins_per_column = 5  # Maximum number of coins per column before starting a new column
+
+    # Calculate the number of columns needed
+    num_columns = (num_points + max_coins_per_column - 1) // max_coins_per_column
+
+    # Calculate the starting x-coordinate for the first coin
+    coin_x_start = start_x - ((num_columns - 1) * coin_spacing_horizontal) / 2
+
+    coins = []  # List to store the coin visual objects
+
+    for i in range(num_points):
+        column = i // max_coins_per_column
+        row = i % max_coins_per_column
+
+        coin_x = coin_x_start + column * coin_spacing_horizontal
+        coin_y = start_y + row * (coin_radius + coin_spacing_vertical) - (max_coins_per_column * coin_radius) / 2
+
+        coin = visual.Circle(win, units='pix', radius=coin_radius, fillColor='gold', lineColor='black')
+        coin.pos = (coin_x, coin_y)
+        coins.append(coin)
+
+    return coins
+
+def draw_points(coins):
+    for coin in coins:
+        coin.draw()
+
+
+
 # do trial and estimate k
-def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
+def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
              accept_button_txt,
-             reject_button, reject_button_txt):
+             reject_button, reject_button_txt, countdown_txt):
     win.flip(), core.wait(0.5), exit_q()  # blank screen in between trials
 
     gripper_zero_baseline = info['gripper_baseline']
     max_effort = info['max_effort']
 
     # update stimuli
-    effort_fill.height = int(info['effort'] / 10.0 * 320)
-    effort_fill.pos = (100, 50 - 160 + int(info['effort'] / 10.0 * 320) / 2)
-    effort_text.text = f"Effort: {info['effort']}"
-    reward_text.text = f"{info['reward']} Points"
-
-    # draw all stimuli
-    stimuli = [effort_outline, effort_fill, effort_text, reward_text, accept_button, accept_button_txt, reject_button,
-               reject_button_txt]
-    draw_all_stimuli(stimuli), win.flip(), exit_q(), core.wait(0.2)
+    effort_fill.height = int(info['effort_offer'] / 10.0 * gv['effort_bar_height'])
+    effort_fill.pos = (100, 50 - 160 + int(info['effort_offer'] / 10.0 * gv['effort_bar_height']) / 2)
+    effort_text.text = f"Effort \nlevel: {info['effort_offer']}"
+    reward_text.text = f"Points: {info['reward_offer']}"
+    coins = create_points(win, info['reward_offer'])
 
     # get participant response
     response = None
+    response_start_time = core.getTime()
     while response is None:
         # Check for mouse hover over either button
         accept_hover = accept_button.contains(mouse)
@@ -246,21 +286,25 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
 
         # Check for mouse click
         if mouse.getPressed()[0]:  # If the mouse is clicked
+            info['participant_choice_response_time'] = core.getTime() - response_start_time
             info['participant_response'] = response
             core.wait(0.5)
             if accept_hover:
                 response = 'accepted'
-
             elif reject_hover:
                 response = 'rejected'
 
         # Draw all stimuli and flip the window
-        draw_all_stimuli(stimuli), core.wait(0.05), win.flip(), exit_q()
+        stimuli = [effort_outline, effort_fill, effort_text, accept_button, accept_button_txt,
+                   reject_button, reject_button_txt, reward_text]
+        draw_all_stimuli(stimuli)
+        draw_points(coins)
+        core.wait(0.02), win.flip(), exit_q()
 
     # update k based on response
     # adaptive step size using logarithmic decay
     step_size = 0.15 / np.log(info['trial_count'] + 4)
-    info['estimated_net_value'] = calculate_net_value(info['reward'], info['effort'], info['estimated_k'])
+    info['estimated_net_value'] = calculate_net_value(info['reward_offer'], info['effort_offer'], info['estimated_k'])
     if info['estimated_net_value'] < 0 and response == 'accepted':
         info['estimated_k'] = info['estimated_k'] - step_size
     elif info['estimated_net_value'] > 0 and response == 'rejected':
@@ -269,58 +313,81 @@ def do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_te
     # adjust reward and effort for next trial to aim for a net value close to zero
     # reward between 10 and 30, effort between 1 and 10
     target_net_value = np.random.uniform(-1, 1)
-    next_effort = int(np.random.uniform(1, 10))
-    next_reward = int(info['estimated_k'] * next_effort ** 2 + target_net_value)
-    info['next_reward'], info['next_effort'] = max(min(next_reward, 28), 8), next_effort
+    next_effort_offer = int(np.random.uniform(1, 10))
+    next_reward_offer = int(info['estimated_k'] * next_effort_offer ** 2 + target_net_value)
+    info['next_reward_offer'], info['next_effort_offer'] = max(min(next_reward_offer, 28), 8), next_effort_offer
 
-    # if participant accepted, make them exert the effort (CONSIDER DOING THIS ONLY ON A SUBSET OF ACCEPT TRIALS!!!)
+    # if participant accepted, make them exert the effort
     if response == 'accepted':
         success = None
-        start_time = None  # Time when condition first met
-
+        time_window_start_time = core.getTime()  # time when the 20-second window starts during which they need to be successful if they do not want to lose 1 point
+        start_time = None  # time when effort condition is first met
         while success is None:
+            elapsed_time = core.getTime() - time_window_start_time
+            if elapsed_time >= 20:  # Check if 20 seconds have elapsed
+                success = False  # Participant failed, exit the loop
+                break
             effort_bar_bottom_y = effort_outline.pos[1] - (effort_outline.height / 2)
             if DUMMY:
                 # calculate the dynamic height of the dark blue bar based on mouse position
                 mouse_y = mouse.getPos()[1]  # get the vertical position of the mouse
-                dynamic_height = max(min(mouse_y - effort_bar_bottom_y, 320), 0)
+                dynamic_height = max(min(mouse_y - effort_bar_bottom_y, gv['effort_bar_height']), 0)
             else:
                 # calculate the dynamic height of the dark blue bar based on current effort
                 current_effort = mp.sample()[0] - gripper_zero_baseline
                 effort_ratio = current_effort / max_effort
-                dynamic_height = max(min(effort_ratio * 320, 320), 0)
-
-                # ensure that the height cannot exceed the total height of the effort bar (320 in this case)
+                dynamic_height = max(min(effort_ratio * gv['effort_bar_height'], gv['effort_bar_height']), 0)
+            # ensure that the height cannot exceed the total height of the effort bar
             effort_fill_dynamic.height = dynamic_height
             effort_fill_dynamic.pos = (100, effort_bar_bottom_y + dynamic_height / 2)
 
             # Check condition for dynamic height
+            total_efforts_in_window = []
             if effort_fill_dynamic.height >= effort_fill.height:
-                if start_time is None:  # Condition just met
+                # Accumulate effort samples during the 1-second period
+                if not DUMMY:
+                    current_effort = mp.sample()[0] - gripper_zero_baseline
+                else:
+                    current_effort = mouse.getPos()[1]
+                total_efforts_in_window.append(current_effort)
+                if start_time is None:  # condition just met
                     start_time = core.getTime()
-                elapsed_time = core.getTime() - start_time
-                time_left = 1 - elapsed_time
-                if time_left <= 0:  # Countdown finished
+                elapsed_condition_time = core.getTime() - start_time
+                if elapsed_condition_time >= 1:  # Participant met the effort condition for 1 second
                     success = True
+                    effort_exerted_in_window = sum(total_efforts_in_window) / len(total_efforts_in_window)
+                    info['effort_expended'] = effort_exerted_in_window
                     break  # Exit the while loop to declare success
-                else:  # Update countdown text during the countdown
-                    reward_text.text = f"{round(time_left, 1)} seconds left"
+                else:  # Update countdown text during the effort condition
+                    countdown_txt.text = f"{round(1 - elapsed_condition_time, 1)} seconds left"
             else:
                 start_time = None  # Reset timer if condition not met
-                reward_text.text = "Keep going!"  # Or any other feedback for the participant
+                countdown_txt.text = "Keep going!"
 
-            # Update stimuli and check for quit condition
-            stimuli = [squeeze_txt, effort_outline, effort_fill, effort_fill_dynamic, effort_text, reward_text]
+            # Update stimuli
+            stimuli = [squeeze_txt, effort_outline, effort_fill, effort_fill_dynamic, countdown_txt]
             draw_all_stimuli(stimuli)
             win.flip(), exit_q()
 
             core.wait(0.01)  # Short wait to prevent overwhelming the CPU
 
         if success:
-            reward_text.text = f"Well done! \n\n+ {info['reward']} Points"
-            stimuli = [effort_outline, effort_fill, effort_fill_dynamic, effort_text, reward_text]
+            countdown_txt.text = f"Well done! \n\n+ {info['reward_offer']} Points"
+            info['reward_earned'] = info['reward_offer']
+            stimuli = [countdown_txt]
+            draw_all_stimuli(stimuli)
+            coins = create_points(win, info['reward_offer'], start_x=200)
+            draw_points(coins)
+            win.flip(), exit_q(), core.wait(2)
+        else:
+            # Participant failed to meet the effort condition within 20 seconds, deduct 1 point
+            info['reward_earned'] = -1
+            countdown_txt.text = "Effort condition not met in 20 seconds. You lost 1 point."
+            stimuli = [effort_outline, effort_fill, effort_fill_dynamic, effort_text, countdown_txt]
             draw_all_stimuli(stimuli)
             win.flip(), exit_q(), core.wait(1.6)
+
+    info['total_reward'] = int(info['total_reward']) + int(info['reward_earned'])
 
     # get updated info dict back out
     return info
@@ -371,7 +438,7 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
 
 # calibration of hand grippers for 3 trials
 # takes the average of average effort in a half-second window around the peak effort of trials 2 and 3
-def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button):
+def do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button):
     graph_start_x = -200
     graph_base_y = -200
     graph_length = 400  # Total length of the x-axis
@@ -382,7 +449,7 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, ca
     times = []  # List to store current trial's time values
 
     # Display initial instructions
-    calibration_txt.text = "Calilbration in process. Do not touch the hand gripper!"
+    calibration_txt.text = "Calilbration in process! Do not touch the hand gripper."
     draw_all_stimuli([calibration_txt])
     win.flip(), exit_q(), core.wait(1)  # Display instructions for 2 seconds
 
@@ -427,7 +494,7 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, ca
         mouse_y_start = mouse.getPos()[1]
         while not recording_started:
             if DUMMY:
-                effort = mouse.getPos()[1] - mouse_y_start
+                effort = (mouse.getPos()[1] - mouse_y_start) / 100
             else:
                 current_effort = mp.sample()[0]
                 effort = current_effort - gripper_zero_baseline
@@ -441,7 +508,7 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, ca
         recording_second_duration = 4
         while core.getTime() - start_time < recording_second_duration:
             if DUMMY:
-                effort = mouse.getPos()[1] - mouse_y_start
+                effort = (mouse.getPos()[1] - mouse_y_start) / 100
             else:
                 current_effort = mp.sample()[0]
                 effort = current_effort - gripper_zero_baseline
@@ -475,10 +542,11 @@ def do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, ca
     info['max_effort_calibration_2'] = max_efforts[1]
     info['max_effort_calibration_3'] = max_efforts[2]
     info['max_effort'] = max_effort
+    info['max_effort_baseline_corrected'] = max_effort - gripper_zero_baseline
 
     welcome_txt.text = f"Well done!"
     draw_all_stimuli([welcome_txt])
-    win.flip(), exit_q(), core.wait(3)
+    win.flip(), exit_q(), core.wait(2)
 
     return info
 
@@ -499,42 +567,41 @@ win.mouseVisible = True
 stimuli = [welcome_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
 
-# calibration instructions
-stimuli = [instructions_calibration_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
+# # calibration instructions
+# stimuli = [instructions_calibration_txt, next_button, next_button_txt]
+# display_instructions(stimuli, mouse)
 
-# calibration of hand grippers
-info = do_calibration(win, mouse, info, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
-dataline = ','.join([str(info[v]) for v in log_vars])
-datafile.write(dataline + '\n')
-datafile.flush()
-
-# task instructions
-stimuli = [instructions1_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
-
-stimuli = [instructions2_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
-
-stimuli = [instructions3_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
-
-stimuli = [instructions4_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
-
-stimuli = [instructions5_txt, next_button, next_button_txt]
-display_instructions(stimuli, mouse)
+# # calibration of hand grippers
+# info = do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
+# dataline = ','.join([str(info[v]) for v in log_vars])
+# datafile.write(dataline + '\n')
+# datafile.flush()
+#
+# # task instructions
+# stimuli = [instructions1_txt, next_button, next_button_txt]
+# display_instructions(stimuli, mouse)
+#
+# stimuli = [instructions2_txt, next_button, next_button_txt]
+# display_instructions(stimuli, mouse)
+#
+# stimuli = [instructions3_txt, next_button, next_button_txt]
+# display_instructions(stimuli, mouse)
+#
+# stimuli = [instructions4_txt, next_button, next_button_txt]
+# display_instructions(stimuli, mouse)
+# instructions4_txt.draw(), win.flip(), exit_q(), core.wait(1)
 
 # actual trials
 for trial in range(gv['max_n_trials']):
-    info = do_trial(win, mouse, info, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text, accept_button,
-                    accept_button_txt, reject_button, reject_button_txt)
+    info = do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effort_text, reward_text,
+                    accept_button,
+                    accept_button_txt, reject_button, reject_button_txt, countdown_txt)
     info['trial_count'] += 1
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')
     datafile.flush()
-    info['reward'] = info['next_reward']
-    info['effort'] = info['next_effort']
+    info['reward_offer'] = info['next_reward_offer']
+    info['effort_offer'] = info['next_effort_offer']
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')
     datafile.flush()

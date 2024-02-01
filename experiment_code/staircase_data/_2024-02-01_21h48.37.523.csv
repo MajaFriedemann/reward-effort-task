@@ -1,0 +1,7 @@
+expName,curec_ID,session,session_nr,date,end_date,participant,age,gender,gripper_baseline,max_effort_calibration_1,max_effort_calibration_2,max_effort_calibration_3,max_effort,max_effort_baseline_corrected,trial_count,reward_offer,next_reward_offer,reward_earned,total_reward,effort_offer,next_effort_offer,effort_expended,estimated_k,estimated_net_value,participant_response,participant_choice_response_time,participant_effort_response_time
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,1,18,24,18,18,6,7,74.0,0.5,0.0,None,33.17647400003625,None
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,1,24,24,18,18,7,7,74.0,0.5,0.0,None,33.17647400003625,None
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,2,24,28,24,42,7,9,107.0,0.4067997598160582,-0.5,None,17.888238249986898,None
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,2,28,28,24,42,9,9,107.0,0.4067997598160582,-0.5,None,17.888238249986898,None
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,3,28,8,28,70,9,5,177.0,0.3230831658333711,-4.950780545100713,None,11.88114004099043,None
+pgACC-TUS-staircase,,,,2024-02-01_21h48.37.523,None,,,,None,None,None,None,None,None,3,8,8,28,70,5,5,177.0,0.3230831658333711,-4.950780545100713,None,11.88114004099043,None

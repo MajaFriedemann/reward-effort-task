@@ -410,7 +410,7 @@ def draw_graph_with_efforts(win, graph_start_x, graph_base_y, graph_length, grap
 
     # Time and effort scales
     time_scale = graph_length / 4
-    effort_scale = graph_height / 4
+    effort_scale = graph_height / 5
 
     # Draw previous efforts
     for i in range(len(prev_efforts)):

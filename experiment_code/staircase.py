@@ -5,7 +5,7 @@ import os
 import numpy as np
 from psychopy import gui, visual, core, data, event, logging, misc, clock
 from psychopy.hardware import keyboard
-# from mpydev import BioPac  # MAJA
+from mpydev import BioPac  # MAJA
 import random
 import math
 
@@ -15,10 +15,9 @@ import math
 print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next win flip
 
 # Pop up asking for participant number, session, age, and gender
-expInfo = {'participant nr': '',
-           'dummy (y/n)': 'y',  # MAJA
-           'session (x/y/s)': '',
-           'session nr': '',
+expInfo = {'participant nr': '999',
+           'dummy (y/n)': '',
+           'session nr': '1',
            'age': '',
            'gender (f/m/o)': '',
            }
@@ -48,11 +47,11 @@ gv = dict(
 # colours
 def convert_rgb_to_psychopy(rgb):
     return tuple([(x / 127.5) - 1 for x in rgb])
-darkblue = convert_rgb_to_psychopy((21, 127, 31))  # effort exerted
-lightblue = convert_rgb_to_psychopy((151, 181, 117))  # effort required
-green = convert_rgb_to_psychopy((6, 186, 99))  # accept button
-red = convert_rgb_to_psychopy((254, 93, 38))  # reject button
-gold = convert_rgb_to_psychopy((235, 238, 232))  # coins
+darkblue = convert_rgb_to_psychopy((0, 102, 0))  # effort exerted
+lightblue = convert_rgb_to_psychopy((102, 204, 102))  # effort required
+green = 'green'  # accept button
+red = 'red'  # reject button
+gold = convert_rgb_to_psychopy((192, 192, 192))  # coins
 
 ###################################
 # SET DATA SAVING VARIABLES
@@ -61,7 +60,6 @@ gold = convert_rgb_to_psychopy((235, 238, 232))  # coins
 info = dict(
     expName=expName,
     curec_ID=curecID,
-    session=expInfo['session (x/y/s)'],
     session_nr=expInfo['session nr'],
     date=data.getDateStr(),
     end_date=None,
@@ -70,17 +68,18 @@ info = dict(
     age=expInfo['age'],
     gender=expInfo['gender (f/m/o)'],
 
+    # this is the gripper 0 point, for some reason it is often not precisely 0, so we measure it once in the beginning
+    # and then subtract it from all other measurements
     gripper_baseline=None,
-    # this is the gripper 0 point, for some reason it is often not precisely 0 so we meausre it once in the beginning and then subtract it from all other measurements
-    max_effort_calibration_1=None,
     # average effort in a half-second window around the peak effort for calibration trial 1
-    max_effort_calibration_2=None,
+    max_effort_calibration_1=None,
     # average effort in a half-second window around the peak effort for calibration trial 2
-    max_effort_calibration_3=None,
+    max_effort_calibration_2=None,
     # average effort in a half-second window around the peak effort for calibration trial 3
+    max_effort_calibration_3=None,
     max_effort=None,  # average of max_effort_calibration_2 and max_effort_calibration_3
-    max_effort_baseline_corrected=None,
     # max_effort minus gripper_baseline so it is comparable across sessions / participants
+    max_effort_baseline_corrected=None,
 
     trial_count=0,  # trial counter
     reward_offer=18,  # trial reward offer (initialised at 18)
@@ -90,20 +89,20 @@ info = dict(
     effort_offer=6,  # trial effort offer (initialised at 6)
     next_effort_offer=None,  # effort offer for next trial
     effort_expended=None,  # actual effort expended on trial during the 1 second where effort is above the threshold
-    estimated_k=0.5,
     # estimated k value (initialised at 0.5) - this will be used to calculate appropriate reward and effort offers
+    estimated_k=0.5,
     estimated_net_value=lambda info: info['reward_offer'] - info['estimated_k'] * info['effort_offer'] ** 2,
     participant_response=None,  # participant response (accepted or rejected)
     participant_choice_response_time=None,  # time taken to make a choice (accept or reject)
-    participant_effort_response_time=None,
     # time taken to exert the required effort (if not within 20 seconds, participant looses 1 point)
+    participant_effort_response_time=None,
 )
 
 # logging
 log_vars = list(info.keys())
 if not os.path.exists('staircase_data'):
     os.mkdir('staircase_data')
-filename = os.path.join('staircase_data', '%s_%s' % (info['participant'], info['date']))
+filename = os.path.join('staircase_data', '%s_%s_%s' % (info['participant'], info['session_nr'], info['date']))
 datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
@@ -144,8 +143,8 @@ calibration_done_txt = visual.TextStim(win=win,
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 instructions1_txt = visual.TextStim(win=win,
-                                    text="Now you can start earning points for your effort. \n\n"
-                                         "Each trial presents an offer of points and an amount of effort required to "
+                                    text="Now you can start earning points for your effort! \n\n"
+                                         "Each trial will present an offer of points and an amount of effort required to "
                                          "get them. Carefully assess if the points "
                                          "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if it's not.",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
@@ -170,7 +169,7 @@ effort_fill = visual.Rect(win, width=120, height=int(info['effort_offer'] / 10.0
                           lineColor=None,
                           fillColor=lightblue)
 effort_fill_dynamic = visual.Rect(win, width=120, fillColor=darkblue, lineColor=None)
-effort_text = visual.TextStim(win, text="Effort: ", pos=(280, 230), color='white', height=42, alignText='left', font='Monospace')
+effort_text = visual.TextStim(win, text="Effort: ", pos=(300, 230), color='white', height=42, alignText='left', font='Monospace')
 
 reward_text = visual.TextStim(win, text=f"Points: {info['reward_offer']}", pos=(-200, 230), color='white', height=42, font='Monospace')
 
@@ -388,7 +387,7 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
             draw_all_stimuli(stimuli)
             coins = create_points(win, info['reward_offer'], start_x=140)
             draw_points(coins)
-            win.flip(), exit_q(), core.wait(2)
+            win.flip(), exit_q(), core.wait(2.4)
         else:
             # Participant failed to meet the effort condition within 20 seconds, deduct 1 point
             info['reward_earned'] = -1
@@ -574,29 +573,29 @@ globalClock = core.Clock()
 mouse = event.Mouse()
 win.mouseVisible = True
 
-# # welcome
-# stimuli = [welcome_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# # calibration instructions
-# stimuli = [instructions_calibration_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# # calibration of hand grippers
-# info = do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
-# dataline = ','.join([str(info[v]) for v in log_vars])
-# datafile.write(dataline + '\n')
-# datafile.flush()
-#
-# # task instructions
-# stimuli = [instructions1_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions2_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
-#
-# stimuli = [instructions3_txt, next_button, next_button_txt]
-# display_instructions(stimuli, mouse)
+# welcome
+stimuli = [welcome_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+# calibration instructions
+stimuli = [instructions_calibration_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+# calibration of hand grippers
+info = do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt, calibration_done_txt, next_button)
+dataline = ','.join([str(info[v]) for v in log_vars])
+datafile.write(dataline + '\n')
+datafile.flush()
+
+# task instructions
+stimuli = [instructions1_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions2_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
+
+stimuli = [instructions3_txt, next_button, next_button_txt]
+display_instructions(stimuli, mouse)
 
 stimuli = [instructions4_txt, next_button, next_button_txt]
 display_instructions(stimuli, mouse)
@@ -626,6 +625,7 @@ datafile.flush()
 # thank you
 thanks_txt.draw()
 win.flip(), exit_q()
+print(info['total_reward'])
 core.wait(5)
 
 # close window

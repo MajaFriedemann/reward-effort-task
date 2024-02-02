@@ -39,7 +39,7 @@ else:
 
 # variables in gv are just used to structure the task
 gv = dict(
-    max_n_trials=5,
+    max_n_trials=50,
     effort_bar_height=320,
 )
 

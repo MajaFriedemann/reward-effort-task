@@ -5,7 +5,6 @@ import os
 import numpy as np
 from psychopy import gui, visual, core, data, event
 from mpydev import BioPac  # MAJA
-
 import json
 
 ###################################
@@ -119,7 +118,7 @@ win = visual.Window(
     gammaErrorPolicy='ignore',
     size=[1920, 1080],  # set correct monitor size
     fullscr=True,
-    screen=1,
+    screen=0,
     allowGUI=True, allowStencil=False,
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
@@ -152,27 +151,26 @@ calibration_done_txt = visual.TextStim(win=win,
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 instructions1_txt = visual.TextStim(win=win,
-                                    text="Now you can start earning points for your effort! \n\n"
+                                    text="Now you can start earning points (each worth 1 penny) for your effort! \n\n"
                                          "Each trial will present an offer of up to 30 points and an amount of effort "
                                          "required to "
                                          "get them. Carefully assess if the points "
-                                         "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if "
-                                         "it's not.",
+                                         "justify the effort. \n\nUse the mouse to click 'Accept' if it's worth it, "
+                                         "and 'Reject' if it's not.",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions2_txt = visual.TextStim(win=win,
                                     text="When you 'Accept', squeeze the hand gripper to exert the specified "
                                          "effort. \n\n"
                                          "As you squeeze, a bar on the screen fills to represent your effort "
-                                         "level. \n\nMatch your squeezing effort to the indicated level and hold it "
-                                         "for 1 second.",
+                                         "level. \n\nMatch your squeezing effort to at least the indicated level and "
+                                         "hold it for 1 second.",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 
 instructions3_txt = visual.TextStim(win=win,
                                     text="Meeting the required level earns you the points offered on that trial. "
                                          "\n\nFailing to reach "
-                                         "it within 8 seconds results in a loss of 1 point. \n\nEvery point is worth "
-                                         "1 penny. "
-                                         "\n\n Click 'Next' to complete 60 trials!",
+                                         "it within 8 seconds results in a loss of 1 point."
+                                         "\n\n Click 'Next' to complete " + str(gv['max_n_trials']) + " trials!",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions4_txt = visual.TextStim(win=win, text="Let's begin!", height=90, pos=[0, 40], color='white',
                                     wrapWidth=800, font='Monospace')
@@ -201,7 +199,7 @@ reject_button_txt = visual.TextStim(win=win, text='REJECT', height=accept_button
                                     bold=True, font='Monospace')
 reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.height, pos=reject_button.pos,
                           fillColor=red, opacity=0.5)
-squeeze_txt = visual.TextStim(win=win, text='Squeeze until the bar is filled up to the threshold!',
+squeeze_txt = visual.TextStim(win=win, text='Squeeze until you are above the threshold!',
                               height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 countdown_txt = visual.TextStim(win, text='Keep going!', pos=(200, 80), color='white', height=42, font='Monospace')
 
@@ -345,12 +343,17 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
     # adjust reward and effort for next trial to aim for a net value close to zero
     # reward between 4 and 30, effort between 1 and 10
     target_net_value = np.random.uniform(-1, 1)
-    next_effort_offer = int(np.random.uniform(1, 10))
-    while next_effort_offer == info['effort_offer']:
-        next_effort_offer = int(np.random.uniform(1, 10))
+    next_reward_offer = int(np.random.uniform(4, 30))  # Randomly sample next_reward_offer between 4 and 30
+    while abs(next_reward_offer - info['reward_offer']) < 2:
+        next_reward_offer = int(np.random.uniform(4, 30))
     current_k = info['estimated_k']
-    next_reward_offer = int(current_k * next_effort_offer ** 2 + target_net_value)
-    info['next_reward_offer'], info['next_effort_offer'] = max(min(next_reward_offer, 30), 4), next_effort_offer
+    if (next_reward_offer - target_net_value) / current_k > 0:
+        next_effort_offer = np.sqrt((next_reward_offer - target_net_value) / current_k)
+        next_effort_offer = np.clip(round(next_effort_offer), 1, 10)
+    else:
+        next_effort_offer = 1
+
+    info['next_effort_offer'], info['next_reward_offer'] = next_effort_offer, next_reward_offer
 
     # if participant accepted, make them exert the effort
     if response == 'accepted':
@@ -397,7 +400,7 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
                     info['effort_expended'] = (effort_exerted_in_window / max_effort) * 10
                     break  # Exit the while loop to declare success
                 else:  # Update countdown text during the effort condition
-                    countdown_txt.text = f"{round(1 - elapsed_condition_time, 1)} seconds left"
+                    countdown_txt.text = f"{round(1.5 - elapsed_condition_time, 1)} seconds left"
             else:
                 start_time = None  # Reset timer if condition not met
                 countdown_txt.text = "Keep going!"

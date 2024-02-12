@@ -151,7 +151,7 @@ calibration_done_txt = visual.TextStim(win=win,
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 instructions1_txt = visual.TextStim(win=win,
-                                    text="Now you can start earning points (each worth 1 penny) for your effort! \n\n"
+                                    text="Now you can start earning points - each worth 1 penny - for your effort! \n\n"
                                          "Each trial will present an offer of up to 30 points and an amount of effort "
                                          "required to "
                                          "get them. Carefully assess if the points "
@@ -343,9 +343,9 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
     # adjust reward and effort for next trial to aim for a net value close to zero
     # reward between 4 and 30, effort between 1 and 10
     target_net_value = np.random.uniform(-1, 1)
-    next_reward_offer = int(np.random.uniform(4, 30))  # Randomly sample next_reward_offer between 4 and 30
+    next_reward_offer = int(np.random.uniform(4, 31))  # Randomly sample next_reward_offer between 4 and 30
     while abs(next_reward_offer - info['reward_offer']) < 2:
-        next_reward_offer = int(np.random.uniform(4, 30))
+        next_reward_offer = int(np.random.uniform(4, 31))
     current_k = info['estimated_k']
     if (next_reward_offer - target_net_value) / current_k > 0:
         next_effort_offer = np.sqrt((next_reward_offer - target_net_value) / current_k)

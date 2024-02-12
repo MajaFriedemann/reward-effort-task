@@ -277,6 +277,8 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
     gripper_zero_baseline = info['gripper_baseline']
     max_effort = info['max_effort']
     effort_trace = []
+    info['effort_expended'] = 0
+    elapsed_time = 0
 
     # update stimuli
     effort_fill.height = int(info['effort_offer'] / 10.0 * gv['effort_bar_height'])
@@ -409,7 +411,7 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
             win.flip(), exit_q(), core.wait(2.4)
 
     info['total_reward'] = int(info['total_reward']) + int(info['reward_earned'])
-    info['effort_trace'] = effort_trace
+    info['effort_trace'] = str(effort_trace)
     info['participant_effort_response_time'] = elapsed_time
     # get updated info dict back out
     return info
@@ -568,7 +570,7 @@ def do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt
     info['max_effort_calibration_3'] = max_efforts[2]
     info['max_effort'] = max_effort
     info['max_effort_baseline_corrected'] = max_effort - gripper_zero_baseline
-    info['effort_trace'] = effort_trace
+    info['effort_trace'] = str(effort_trace)
 
     welcome_txt.text = f"Well done!"
     draw_all_stimuli([welcome_txt])
@@ -629,11 +631,11 @@ for trial in range(gv['max_n_trials']):
                     accept_button,
                     accept_button_txt, reject_button, reject_button_txt, countdown_txt)
     info['trial_count'] += 1
-    info['reward_offer'] = info['next_reward_offer']
-    info['effort_offer'] = info['next_effort_offer']
     dataline = ','.join([str(info[v]) for v in log_vars])
     datafile.write(dataline + '\n')
     datafile.flush()
+    info['reward_offer'] = info['next_reward_offer']
+    info['effort_offer'] = info['next_effort_offer']
 core.wait(0.5)
 
 # save data

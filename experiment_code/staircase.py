@@ -412,7 +412,7 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
             win.flip(), exit_q(), core.wait(2.4)
 
     info['total_reward'] = int(info['total_reward']) + int(info['reward_earned'])
-    info['effort_trace'] = json.dumps(effort_trace)
+    info['effort_trace'] = '"' + json.dumps(effort_trace) + '"'
     info['participant_effort_response_time'] = elapsed_time
     # get updated info dict back out
     return info
@@ -571,7 +571,7 @@ def do_calibration(win, mouse, info, gv, DUMMY, mp, calibration_txt, welcome_txt
     info['max_effort_calibration_3'] = max_efforts[2]
     info['max_effort'] = max_effort
     info['max_effort_baseline_corrected'] = max_effort - gripper_zero_baseline
-    info['effort_trace'] = json.dumps(effort_trace)
+    info['effort_trace'] = '"' + json.dumps(effort_trace) + '"'
 
     welcome_txt.text = f"Well done!"
     draw_all_stimuli([welcome_txt])

@@ -410,6 +410,7 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
 
     info['total_reward'] = int(info['total_reward']) + int(info['reward_earned'])
     info['effort_trace'] = effort_trace
+    info['participant_effort_response_time'] = elapsed_time
     # get updated info dict back out
     return info
 

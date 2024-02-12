@@ -3,11 +3,9 @@
 ###################################
 import os
 import numpy as np
-from psychopy import gui, visual, core, data, event, logging, misc, clock
-from psychopy.hardware import keyboard
+from psychopy import gui, visual, core, data, event
 from mpydev import BioPac  # MAJA
-import random
-import math
+
 import json
 
 ###################################
@@ -41,7 +39,7 @@ else:
 # variables in gv are just used to structure the task
 gv = dict(
     max_n_trials=45,
-    n_trials_per_block=45/3,  # give participants a break and indication of how many trials are left every 20 trials
+    n_trials_per_block=45 / 3,  # give participants a break and indication of how many trials are left every 20 trials
     effort_bar_height=320,
 )
 
@@ -49,6 +47,8 @@ gv = dict(
 # colours
 def convert_rgb_to_psychopy(rgb):
     return tuple([(x / 127.5) - 1 for x in rgb])
+
+
 darkblue = convert_rgb_to_psychopy((0, 102, 0))  # effort exerted
 darkblue = darkblue + (0.7,)  # add opacity
 lightblue = convert_rgb_to_psychopy((102, 204, 102))  # effort required
@@ -81,7 +81,7 @@ info = dict(
     # average effort in a half-second window around the peak effort for calibration trial 3
     max_effort_calibration_3=None,
     max_effort=None,  # average of max_effort_calibration_2 and max_effort_calibration_3
-    # max_effort minus gripper_baseline so it is comparable across sessions / participants
+    # max_effort minus gripper_baseline, so it is comparable across sessions / participants
     max_effort_baseline_corrected=None,
 
     trial_count=0,  # trial counter
@@ -91,11 +91,12 @@ info = dict(
     total_reward=0,  # total reward earned so far
     effort_offer=6,  # trial effort offer (initialised at 6)
     next_effort_offer=None,  # effort offer for next trial
-    effort_expended=None,  # actual effort expended on trial during the 1 second where effort is above the threshold, divided by max_effort and times 10 to make comparable with effort_offer
+    effort_expended=None,  # actual effort expended on trial during the 1 second where effort is above the threshold,
+    # divided by max_effort and times 10 to make comparable with effort_offer
     effort_trace=None,  # trace of effort exerted over the complete trial, baseline corrected
     # estimated k value (initialised at 0.5) - this will be used to calculate appropriate reward and effort offers
     estimated_k=0.5,
-    estimated_net_value=lambda info: info['reward_offer'] - info['estimated_k'] * info['effort_offer'] ** 2,
+    estimated_net_value=18 - 0.5 * 6 ** 2,
     participant_response=None,  # participant response (accepted or rejected)
     participant_choice_response_time=None,  # time taken to make a choice (accept or reject)
     # time taken to exert the required effort (if not within 20 seconds, participant looses 1 point)
@@ -127,8 +128,10 @@ win = visual.Window(
 # CREATE STIMULI
 ###################################
 next_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -270), fillColor='green')
-next_button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=next_button.pos, color='black', bold=True, font='Monospace')
-continue_button_txt = visual.TextStim(win=win, text='CONTINUE', height=25, pos=next_button.pos, color='black', bold=True, font='Monospace')
+next_button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=next_button.pos, color='black', bold=True,
+                                  font='Monospace')
+continue_button_txt = visual.TextStim(win=win, text='CONTINUE', height=25, pos=next_button.pos, color='black',
+                                      bold=True, font='Monospace')
 next_glow = visual.Rect(win, width=170, height=70, pos=next_button.pos, fillColor='green', opacity=0.5)
 welcome_txt = visual.TextStim(win=win, text='Welcome to this experiment!', height=90, pos=[0, 40], color='white',
                               wrapWidth=800, font='Monospace')
@@ -136,32 +139,39 @@ instructions_calibration_txt = visual.TextStim(win=win,
                                                text="In this task, you will be asked to squeeze a hand gripper. \n\n "
                                                     "When asked to do so, please "
                                                     "take the hand gripper and ensure you have a firm grip.\n\n"
-                                                    "We will guide you through the process. \n\nFor now, please refrain "
-                                                    "from touching the gripper as it needs to be calibrated first.",
+                                                    "We will guide you through the process. \n\nFor now, please refrain"
+                                                    " from touching the gripper as it needs to be calibrated first.",
                                                height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 calibration_done_txt = visual.TextStim(win=win,
                                        text="The calibration process is now complete. \n\n Please take the hand "
                                             "gripper in the hand that you are not currently using for the computer "
                                             "mouse and ensure you have a firm grip.\n\n"
-                                            "When you are ready to try out how hard you can squeeze, click the 'Next' button.",
+                                            "When you are ready to try out how hard you can squeeze, click the 'Next' "
+                                            "button.",
                                        height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 calibration_txt = visual.TextStim(win=win, text='Squeeze the hand gripper until the bar is filled up to the threshold!',
                                   height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 instructions1_txt = visual.TextStim(win=win,
                                     text="Now you can start earning points for your effort! \n\n"
-                                         "Each trial will present an offer of up to 30 points and an amount of effort required to "
+                                         "Each trial will present an offer of up to 30 points and an amount of effort "
+                                         "required to "
                                          "get them. Carefully assess if the points "
-                                         "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if it's not.",
+                                         "justify the effort. \n\nClick 'Accept' if it's worth it, and 'Reject' if "
+                                         "it's not.",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions2_txt = visual.TextStim(win=win,
-                                    text="When you 'Accept', squeeze the hand gripper to exert the specified effort. \n\n"
+                                    text="When you 'Accept', squeeze the hand gripper to exert the specified "
+                                         "effort. \n\n"
                                          "As you squeeze, a bar on the screen fills to represent your effort "
-                                         "level. \n\nMatch your squeezing effort to the indicated level and hold it for 1 second.",
+                                         "level. \n\nMatch your squeezing effort to the indicated level and hold it "
+                                         "for 1 second.",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 
 instructions3_txt = visual.TextStim(win=win,
-                                    text="Meeting the required level earns you the points offered on that trial. \n\nFailing to reach "
-                                         "it within 8 seconds results in a loss of 1 point. \n\nEvery point is worth 1 penny. "
+                                    text="Meeting the required level earns you the points offered on that trial. "
+                                         "\n\nFailing to reach "
+                                         "it within 8 seconds results in a loss of 1 point. \n\nEvery point is worth "
+                                         "1 penny. "
                                          "\n\n Click 'Next' to complete 60 trials!",
                                     height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions4_txt = visual.TextStim(win=win, text="Let's begin!", height=90, pos=[0, 40], color='white',
@@ -174,9 +184,11 @@ effort_fill = visual.Rect(win, width=120, height=int(info['effort_offer'] / 10.0
                           lineColor=None,
                           fillColor=lightblue)
 effort_fill_dynamic = visual.Rect(win, width=120, fillColor=darkblue, lineColor=None)
-effort_text = visual.TextStim(win, text="Effort: ", pos=(-300, 230), color='white', height=42, alignText='left', font='Monospace')
+effort_text = visual.TextStim(win, text="Effort: ", pos=(-300, 230), color='white', height=42, alignText='left',
+                              font='Monospace')
 
-reward_text = visual.TextStim(win, text=f"Points: {info['reward_offer']}", pos=(200, 230), color='white', height=42, font='Monospace')
+reward_text = visual.TextStim(win, text=f"Points: {info['reward_offer']}", pos=(200, 230), color='white', height=42,
+                              font='Monospace')
 
 accept_button = visual.Rect(win, width=150, height=60, pos=(0, -270), fillColor=green)
 accept_button_txt = visual.TextStim(win=win, text='ACCEPT', height=22, pos=accept_button.pos, color='black',
@@ -192,7 +204,6 @@ reject_glow = visual.Rect(win, width=accept_glow.width, height=accept_glow.heigh
 squeeze_txt = visual.TextStim(win=win, text='Squeeze until the bar is filled up to the threshold!',
                               height=40, pos=[0, 300], color='white', wrapWidth=2000, font='Monospace')
 countdown_txt = visual.TextStim(win, text='Keep going!', pos=(200, 80), color='white', height=42, font='Monospace')
-
 
 
 ###################################
@@ -323,12 +334,13 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
 
     # update k based on response
     # adaptive step size using logarithmic decay
+    current_k = info['estimated_k']
     step_size = 0.15 / np.log(info['trial_count'] + 4)
     info['estimated_net_value'] = calculate_net_value(info['reward_offer'], info['effort_offer'], info['estimated_k'])
     if info['estimated_net_value'] < 0 and response == 'accepted':
-        info['estimated_k'] = info['estimated_k'] - step_size
+        info['estimated_k'] = current_k - step_size
     elif info['estimated_net_value'] > 0 and response == 'rejected':
-        info['estimated_k'] = info['estimated_k'] + step_size
+        info['estimated_k'] = current_k + step_size
 
     # adjust reward and effort for next trial to aim for a net value close to zero
     # reward between 4 and 30, effort between 1 and 10
@@ -336,13 +348,15 @@ def do_trial(win, mouse, info, gv, DUMMY, mp, effort_outline, effort_fill, effor
     next_effort_offer = int(np.random.uniform(1, 10))
     while next_effort_offer == info['effort_offer']:
         next_effort_offer = int(np.random.uniform(1, 10))
-    next_reward_offer = int(info['estimated_k'] * next_effort_offer ** 2 + target_net_value)
+    current_k = info['estimated_k']
+    next_reward_offer = int(current_k * next_effort_offer ** 2 + target_net_value)
     info['next_reward_offer'], info['next_effort_offer'] = max(min(next_reward_offer, 30), 4), next_effort_offer
 
     # if participant accepted, make them exert the effort
     if response == 'accepted':
         success = None
-        time_window_start_time = core.getTime()  # time when the 20-second window starts during which they need to be successful if they do not want to lose 1 point
+        time_window_start_time = core.getTime()  # time when the 20-second window starts during which they need to be
+        # successful if they do not want to lose 1 point
         start_time = None  # time when effort condition is first met
         while success is None:
             elapsed_time = core.getTime() - time_window_start_time
@@ -646,7 +660,8 @@ datafile.write(dataline + '\n')
 datafile.flush()
 
 # thank you
-thanks_txt = visual.TextStim(win=win, text='You earned ' + str(info['total_reward']) + ' points. \n\nThank you for completing the study!',
+thanks_txt = visual.TextStim(win=win, text='You earned ' + str(info['total_reward']) + ' points. \n\nThank you for '
+                                                                                       'completing the study!',
                              height=70, pos=[0, 40], color='white', font='Monospace')
 thanks_txt.draw()
 win.flip(), exit_q()

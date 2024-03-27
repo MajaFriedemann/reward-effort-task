@@ -1,1 +1,3 @@
-# pgACC-TUS
+# reward-effort-task
+
+Code for pgACC TUS experiment

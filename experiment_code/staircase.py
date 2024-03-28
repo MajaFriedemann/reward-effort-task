@@ -1,10 +1,16 @@
+# old script - tried to have a staircase to calibrate reward-effort offers to participants' individual discounting functions
+# analysing some pilot data showed that everyone does this similarly though
+# also tried out some functions etc., so this is a slightly messy stand-alone script
+# Maja Friedemann 2024
+
+
 ###################################
 # IMPORT PACKAGES
 ###################################
 import os
 import numpy as np
 from psychopy import gui, visual, core, data, event
-from mpydev import BioPac  # MAJA
+from mpydev import BioPac
 import json
 
 ###################################
@@ -46,7 +52,6 @@ gv = dict(
 # colours
 def convert_rgb_to_psychopy(rgb):
     return tuple([(x / 127.5) - 1 for x in rgb])
-
 
 darkblue = convert_rgb_to_psychopy((0, 102, 0))  # effort exerted
 darkblue = darkblue + (0.7,)  # add opacity

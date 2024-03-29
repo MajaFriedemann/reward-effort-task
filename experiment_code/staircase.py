@@ -1,8 +1,12 @@
-# old script - tried to have a staircase to calibrate reward-effort offers to participants' individual discounting functions
-# analysing some pilot data showed that everyone does this similarly though
-# also tried out some functions etc., so this is a slightly messy stand-alone script
-# Maja Friedemann 2024
+"""
+OLD SCRIPT
 
+tried to have a staircase to calibrate reward-effort offers to participants' individual discounting functions
+analysing some pilot data showed that everyone does this similarly though
+also tried out some functions etc., so this is a slightly messy stand-alone script
+
+Maja Friedemann 2024
+"""
 
 ###################################
 # IMPORT PACKAGES
@@ -10,8 +14,8 @@
 import os
 import numpy as np
 from psychopy import gui, visual, core, data, event
-from mpydev import BioPac
 import json
+
 
 ###################################
 # SESSION INFORMATION
@@ -20,7 +24,7 @@ print('Reminder: Press Q to quit.')  # press Q and experiment will quit on next 
 
 # Pop up asking for participant number, session, age, and gender
 expInfo = {'participant nr': '999',
-           'dummy (y/n)': '',
+           'dummy (y/n)': 'y',
            'session nr': '1',
            'age': '',
            'gender (f/m/o)': '',
@@ -31,6 +35,7 @@ dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
 if not dlg.OK:
     core.quit()  # pressed cancel
 
+
 ###################################
 # SET EXPERIMENT VARIABLES
 ###################################
@@ -39,6 +44,7 @@ if expInfo['dummy (y/n)'] == 'y':
     mp = 1
 else:
     DUMMY = False
+    from mpydev import BioPac
     mp = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
 
 # variables in gv are just used to structure the task
@@ -59,6 +65,7 @@ lightblue = convert_rgb_to_psychopy((102, 204, 102))  # effort required
 green = 'green'  # accept button
 red = 'red'  # reject button
 gold = convert_rgb_to_psychopy((192, 192, 192))  # coins
+
 
 ###################################
 # SET DATA SAVING VARIABLES
@@ -116,6 +123,7 @@ datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
 
+
 ###################################
 # SET UP WINDOW
 ###################################
@@ -127,6 +135,7 @@ win = visual.Window(
     allowGUI=True, allowStencil=False,
     monitor='testMonitor', color='black',
     blendMode='avg', useFBO=True, units='pix')
+
 
 ###################################
 # CREATE STIMULI

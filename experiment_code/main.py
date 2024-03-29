@@ -1,5 +1,5 @@
 # script for the main task
-# if using the hand-grippers (rather than DUMMY version), run gripper-calibration.py before this to determine the participant's max grip strength
+# if using the hand-grippers (rather than DUMMY version), run gripper_calibration.py before this to determine the participant's max grip strength
 # Maja Friedemann 2024
 
 ###################################
@@ -10,6 +10,7 @@ import numpy as np
 from psychopy import gui, visual, core, data, event
 from mpydev import BioPac
 import json
+import helper_functions as hf
 
 
 ###################################
@@ -66,7 +67,7 @@ info = dict(
     gender=expInfo['gender (f/m/o)'],
 
     gripper_baseline=None, # this is the gripper 0 point, for some reason it is often not precisely 0, so we measure it once in the beginning and then subtract it from all other measurements
-    max_strength=None, # get this info from files saved by gripper-calibration.py
+    max_strength=None, # get this info from files saved by gripper_calibration.py
 
     block_count=0, # block counter
     trial_count=0, # trial counter

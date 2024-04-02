@@ -119,14 +119,14 @@ hf.check_button(win, green_button, stimuli, mouse) # show instructions until but
 # INSTRUCTIONS
 instructions_txt.text = ("Let's get ready to measure your grip strength! \n\n"
                          "First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
-                         "When you're ready, click the 'NEXT' button to begin the calibration process")
+                         "Click the 'NEXT' button to begin the calibration process.")
 stimuli = [green_button, button_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
 hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
 
 
 # CALIBRATE HAND GRIPPER ZERO BASELINE
-instructions_top_txt.text = "Calibration in process. Do not touch the hand gripper."
+instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
 hf.draw_all_stimuli(win, [instructions_top_txt], 1)
 gripper_zero_baseline = None
 for countdown in range(3, 0, -1):
@@ -170,7 +170,6 @@ for trial in range(3):  # 3 calibration trials
     start_time = None
     while not recording_started:
         strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
-        print(strength)
         # threshold to start recording
         if strength > 0.1:
             recording_started = True
@@ -180,24 +179,24 @@ for trial in range(3):  # 3 calibration trials
     recording_duration = 4
     while core.getTime() - start_time < recording_duration:
         strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
-        print(strength)
         strength_samples.append(strength)
         current_time = core.getTime() - start_time
         times.append(current_time)
 
         # draw the graph
+        instructions_top_txt.draw()
         horizontal_graph_line.draw()
         vertical_graph_line.draw()
         # draw previous strength_samples
         for i in range(1, len(prev_strength_samples)):
             start_point = [graph_start_x + prev_times[i-1] * (graph_length / 4), graph_start_y + prev_strength_samples[i-1] * (graph_height / 5)]
             end_point = [graph_start_x + prev_times[i] * (graph_length / 4), graph_start_y + prev_strength_samples[i] * (graph_height / 5)]
-            visual.Line(win, start=start_point, end=end_point, lineWidth=2, lineColor='lightblue').draw()
+            visual.Line(win, start=start_point, end=end_point, lineWidth=10, lineColor='lightblue').draw()
         # draw current strength_samples
         for i in range(1, len(strength_samples)):
             start_point = [graph_start_x + times[i - 1] * (graph_length / 4), graph_start_y + strength_samples[i - 1] * (graph_height / 5)]
             end_point = [graph_start_x + times[i] * (graph_length / 4), graph_start_y + strength_samples[i] * (graph_height / 5)]
-            visual.Line(win, start=start_point, end=end_point, lineWidth=2, lineColor='red').draw()
+            visual.Line(win, start=start_point, end=end_point, lineWidth=10, lineColor='red').draw()
         win.flip()
         hf.exit_q(win)
 
@@ -228,8 +227,8 @@ datafile.flush()
 
 
 # THANK YOU
-big_txt.text = 'Well done! \n\nYour grip strength test is completed.'
-hf.draw_all_stimuli(win,[big_txt], 6)
+big_txt.text = 'Your grip strength test is completed.\n\nWell done!'
+hf.draw_all_stimuli(win,[big_txt], 8)
 
 
 # CLOSE WINDOW

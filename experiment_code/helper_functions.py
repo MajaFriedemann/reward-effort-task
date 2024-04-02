@@ -36,11 +36,11 @@ def check_button(win, button, stimuli, mouse):
     check for button hover and click
     """
     draw_all_stimuli(win, stimuli, 0.2)
-    button_glow = visual.Rect(win, width=button.width+10, height=button.height+10, pos=button.pos, fillColor=button.fillColor, opacity=0.5)
+    button_glow = visual.Rect(win, width=button.width+15, height=button.height+15, pos=button.pos, fillColor=button.fillColor, opacity=0.5)
     while not mouse.isPressedIn(button):
         if button.contains(mouse): # check for hover
             button_glow.draw() # hover, draw button glow
-        draw_all_stimuli(win, stimuli, 0.2) # check for mouse click and hove, wait time to not overwhelm CPU
+        draw_all_stimuli(win, stimuli) # check for mouse click and hover
     core.wait(0.5) # clicked button, move on, feels more natural with short wait for button to react
 
 
@@ -51,4 +51,10 @@ def convert_rgb_to_psychopy(rgb):
     return tuple([(x / 127.5) - 1 for x in rgb])
 
 
-
+def sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y):
+    if DUMMY:
+        strength = (mouse.getPos()[1] - graph_start_y) / 80
+    else:
+        strength = gripper.sample()[0] - gripper_zero_baseline
+    core.wait(0.01)
+    return strength

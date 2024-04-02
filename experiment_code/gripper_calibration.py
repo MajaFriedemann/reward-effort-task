@@ -21,7 +21,7 @@ print('Reminder: Press Q to quit.')
 ###################################
 # SESSION INFO & DATA SAVING
 ###################################
-expName = 'reward-effort-pgACC-TUS_calibration'
+expName = 'reward-strength-pgACC-TUS_calibration'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
            'gripper hand (l/r)': '',
@@ -37,16 +37,15 @@ info = dict(
     session_nr=0,
     date=data.getDateStr(),
     participant=expInfo['participant nr'],
-    gripper_baseline=None, # this is the gripper 0 point, for some reason it is often not precisely 0, so we measure it once in the beginning and then subtract it from all other measurements
 
-    # following variables are all baseline corrected
-    strength_trace_1=None, # strength trace for calibration trial 1
-    max_strength_1=None, # average strength in a half-second window around the peak effort for calibration trial 1
-    strength_trace_2=None, # strength trace for calibration trial 2
-    max_strength__2=None, # average strength in a half-second window around the peak effort for calibration trial 2
-    strength_trace_3=None, # strength trace for calibration trial 3
-    max_strength_3=None, # average strength in a half-second window around the peak effort for calibration trial 3
-    max_strength=None,  # average of max_strength_calibration_2 and max_strength_calibration_3
+    # following variables are all corrected for the gripper 0 baseline
+    strength_trace_1='', # strength trace for calibration trial 1
+    max_strength_1=0.0, # average strength in a half-second window around the peak strength for calibration trial 1
+    strength_trace_2='', # strength trace for calibration trial 2
+    max_strength__2=0.0, # average strength in a half-second window around the peak strength for calibration trial 2
+    strength_trace_3='', # strength trace for calibration trial 3
+    max_strength_3=0.0, # average strength in a half-second window around the peak strength for calibration trial 3
+    max_strength=0.0,  # average of max_strength_calibration_2 and max_strength_calibration_3
 )
 
 # start a csv file for saving the participant data
@@ -90,8 +89,9 @@ win = visual.Window(
 ###################################
 green_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -270), fillColor='green')
 button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.pos, color='black', bold=True,font='Monospace')
-big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
+big_txt = visual.TextStim(win=win, text='Welcome to the \ngrip strength test!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
+instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Monospace')
 
 graph_start_x = -300
 graph_length = 600
@@ -109,118 +109,129 @@ globalClock = core.Clock()
 mouse = event.Mouse()
 win.mouseVisible = True
 
+
 # WELCOME
 stimuli = [green_button, button_txt, big_txt]
 hf.draw_all_stimuli(win, stimuli)
 hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
 
+
 # INSTRUCTIONS
-instructions_txt.text = "We are going to test your grip strength! \n\nTo do this, we first need to calibrate the hand gripper. Please do not touch the gripper. Click NEXT to start the calibration."
+instructions_txt.text = ("Let's get ready to measure your grip strength! \n\n"
+                         "First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
+                         "When you're ready, click the 'NEXT' button to begin the calibration process")
 stimuli = [green_button, button_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
 hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+
 
 # CALIBRATE HAND GRIPPER ZERO BASELINE
-instructions_txt.text = "Calibration in process! Do not touch the hand gripper."
-hf.draw_all_stimuli(win, [instructions_txt], 2) # show instructions for 2 seconds
+instructions_top_txt.text = "Calibration in process. Do not touch the hand gripper."
+hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+gripper_zero_baseline = None
 for countdown in range(3, 0, -1):
     big_txt.text = str(countdown)
-    hf.draw_all_stimuli(win, [big_txt, instructions_txt]) # display a 3, 2, 1 countdown
+    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
     if not DUMMY and countdown == 3:
         gripper_zero_baseline = gripper.sample()[0] # on 1, sample the gripper 0 baseline
-        info['gripper_baseline'] = gripper_zero_baseline
+
 
 # INSTRUCTIONS
-instructions_txt.text = ("The calibration process is now complete. \n\n Please take the hand gripper in the hand that you are not currently using for the computer mouse and ensure you have a firm grip.\n\n"
-                         "When you are ready to try out how hard you can squeeze, click NEXT.")
+instructions_txt.text = ("Great! Calibration is done. \n\n"
+                         "Now, please pick up the hand gripper with the hand you're not using for the mouse. Make sure you have a comfortable yet firm grip. \n\n"
+                         "There will be 3 trials. When you feel ready to show us how strong your grip is, press 'NEXT' to begin.")
 stimuli = [green_button, button_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli)
+hf.draw_all_stimuli(win, stimuli, 1)
 hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
 
 
-
-
-
-
-
-# CALIBRATE PARTICIPANT MAX GRIP STRENGTH - make function! MAJA 
-efforts = []  # list to store effort values
+# CALIBRATE PARTICIPANT MAX GRIP STRENGTH
+strength_samples = []  # list to store strength values
 times = []  # list to store time values
+max_trial_strengths = []
+trial_strength_samples = []
 
-for trial in range(1, 4):  # 3 calibration trials
-    prev_efforts = efforts.copy() # get previous trial's efforts
+for trial in range(3):  # 3 calibration trials
+    prev_strength_samples = strength_samples.copy() # get previous trial's strength_samples
     prev_times = times.copy() # get previous trial's times
-    efforts = []  # reset the current trial's efforts
+    strength_samples = []  # reset the current trial's strength_samples
     times = []  # reset the current trial's times
 
     # instructions and draw graph
-    if trial == 1:
-        instructions_txt.text = f"Trial {trial}: When ready, squeeze as hard as you can!"
+    if trial == 0:
+        instructions_top_txt.text = f"Trial {trial+1}: When ready, squeeze as hard as you can!"
     else:
-        instructions_txt.text = f"Trial {trial}: Try to squeeze harder than on your last trial!"
-    stimuli = [instructions_txt, horizontal_graph_line, vertical_graph_line]
+        instructions_top_txt.text = f"Trial {trial+1}: Try to squeeze harder than on your last trial!"
+    stimuli = [instructions_top_txt, horizontal_graph_line, vertical_graph_line]
     hf.draw_all_stimuli(win, stimuli, 1)
 
     # wait for participant to start
     recording_started = False
     start_time = None
-    mouse_y_start = mouse.getPos()[1]
     while not recording_started:
-        if DUMMY:
-            effort = (mouse.getPos()[1] - mouse_y_start) / 100
-        else:
-            effort = gripper.sample()[0] - gripper_zero_baseline
+        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
+        print(strength)
         # threshold to start recording
-        if effort > 0.1:
+        if strength > 0.1:
             recording_started = True
             start_time = core.getTime()
-        core.wait(0.1)
 
-    # begin recording for 4 seconds after effort threshold is exceeded
-    while core.getTime() - start_time < 4:
-        if DUMMY:
-            effort = (mouse.getPos()[1] - mouse_y_start) / 100
-        else:
-            effort = gripper.sample()[0] - gripper_zero_baseline
+    # begin recording for 4 seconds after strength threshold is exceeded
+    recording_duration = 4
+    while core.getTime() - start_time < recording_duration:
+        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
+        print(strength)
+        strength_samples.append(strength)
         current_time = core.getTime() - start_time
-        efforts.append(effort)
         times.append(current_time)
 
-        # draw the graph with the current and previous efforts
+        # draw the graph
         horizontal_graph_line.draw()
         vertical_graph_line.draw()
-
-        # Function to calculate point coordinates
-        def calculate_point(time, effort, time_scale, effort_scale):
-            x = graph_start_x + time * time_scale
-            y = graph_start_y + effort * effort_scale
-            return [x, y]
-
-        # Time and effort scales
-        time_scale = graph_length / 4
-        effort_scale = graph_height / 5
-
-        # Draw previous efforts
-        for i in range(len(prev_efforts)):
-            if i == 0:
-                start_point = calculate_point(0, 0, time_scale, effort_scale)  # Start from origin
-            else:
-                start_point = calculate_point(prev_times[i - 1], prev_efforts[i - 1], time_scale, effort_scale)
-            end_point = calculate_point(prev_times[i], prev_efforts[i], time_scale, effort_scale)
+        # draw previous strength_samples
+        for i in range(1, len(prev_strength_samples)):
+            start_point = [graph_start_x + prev_times[i-1] * (graph_length / 4), graph_start_y + prev_strength_samples[i-1] * (graph_height / 5)]
+            end_point = [graph_start_x + prev_times[i] * (graph_length / 4), graph_start_y + prev_strength_samples[i] * (graph_height / 5)]
             visual.Line(win, start=start_point, end=end_point, lineWidth=2, lineColor='lightblue').draw()
+        # draw current strength_samples
+        for i in range(1, len(strength_samples)):
+            start_point = [graph_start_x + times[i - 1] * (graph_length / 4), graph_start_y + strength_samples[i - 1] * (graph_height / 5)]
+            end_point = [graph_start_x + times[i] * (graph_length / 4), graph_start_y + strength_samples[i] * (graph_height / 5)]
+            visual.Line(win, start=start_point, end=end_point, lineWidth=2, lineColor='red').draw()
+        win.flip()
+        hf.exit_q(win)
 
-        # Draw current efforts
-        for i in range(len(efforts)):
-            if i == 0:
-                start_point = calculate_point(0, 0, time_scale, effort_scale)  # Start from origin
-            else:
-                start_point = calculate_point(times[i - 1], efforts[i - 1], time_scale, effort_scale)
-            end_point = calculate_point(times[i], efforts[i], time_scale, effort_scale)
-            visual.Line(win, start=start_point, end=end_point, lineWidth=4, lineColor='red').draw()
+    # save strength trace and max strength in a half-second window around the peak for each trial
+    quarter_second_window_length = int((len(strength_samples) / recording_duration) / 4) # determine how many samples represent a quarter of a second
+    window_start = max(0, strength_samples.index(max(strength_samples)) - quarter_second_window_length)
+    window_end = min(strength_samples.index(max(strength_samples)) + quarter_second_window_length + 1, len(strength_samples))
+    max_trial_strengths.append(sum(strength_samples[window_start:window_end]) / (window_end - window_start))
+    trial_strength_samples.append(strength_samples)
 
-    # Rest period message
-    instructions_txt.text = "Trial completed. Relax for a moment."
-    hf.draw_all_stimuli(win, [instructions_txt], 4)
-
+    # rest period message
+    core.wait(3)
+    instructions_txt.text = "Trial completed. \n\n Relax for a moment."
+    hf.draw_all_stimuli(win, [instructions_txt], 5)
 
 
+# SAVE DATA
+info['max_strength_1'] = max_trial_strengths[0]
+info['strength_trace_1'] = '"' + json.dumps(trial_strength_samples[0]) + '"'
+info['max_strength_2'] = max_trial_strengths[1]
+info['strength_trace_2'] = '"' + json.dumps(trial_strength_samples[1]) + '"'
+info['max_strength_3'] = max_trial_strengths[2]
+info['strength_trace_3'] = '"' + json.dumps(trial_strength_samples[2]) + '"'
+info['max_strength'] = (max_trial_strengths[1] + max_trial_strengths[2]) / 2
+dataline = ','.join([str(info[v]) for v in log_vars])
+datafile.write(dataline + '\n')
+datafile.flush()
+
+
+# THANK YOU
+big_txt.text = 'Well done! \n\nYour grip strength test is completed.'
+hf.draw_all_stimuli(win,[big_txt], 6)
+
+
+# CLOSE WINDOW
+win.close()
+core.quit()

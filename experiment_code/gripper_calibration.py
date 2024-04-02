@@ -1,5 +1,5 @@
 """
-script for calibrating the hand grippers
+script for calibrating the hand gripper (gripper labeled as LEFT)
 needs to be run before main.py
 for the pgACC TUS study probably best to do this on the structural scan day alongside calibrating the dot motion stimulus for the confidence task?
 
@@ -65,7 +65,7 @@ DUMMY = expInfo['dummy (y/n)'].lower() == 'y'
 gripper = None
 if not DUMMY:
     from mpydev import BioPac
-    gripper = BioPac("MP160", n_channels=2, samplerate=200, logfile="test", overwrite=True)
+    gripper = BioPac("MP160", n_channels=1, samplerate=200, logfile="test", overwrite=True)
     gripper.start_recording()
 
 
@@ -189,14 +189,14 @@ for trial in range(3):  # 3 calibration trials
         vertical_graph_line.draw()
         # draw previous strength_samples
         for i in range(1, len(prev_strength_samples)):
-            start_point = [graph_start_x + prev_times[i-1] * (graph_length / 4), graph_start_y + prev_strength_samples[i-1] * (graph_height / 5)]
-            end_point = [graph_start_x + prev_times[i] * (graph_length / 4), graph_start_y + prev_strength_samples[i] * (graph_height / 5)]
-            visual.Line(win, start=start_point, end=end_point, lineWidth=10, lineColor='lightblue').draw()
+            start_point = [graph_start_x + prev_times[i-1] * (graph_length / recording_duration), graph_start_y + prev_strength_samples[i-1] * (graph_height / 6)]
+            end_point = [graph_start_x + prev_times[i] * (graph_length / recording_duration), graph_start_y + prev_strength_samples[i] * (graph_height / 6)]
+            visual.Line(win, start=start_point, end=end_point, lineWidth=8, lineColor='lightblue').draw()
         # draw current strength_samples
         for i in range(1, len(strength_samples)):
-            start_point = [graph_start_x + times[i - 1] * (graph_length / 4), graph_start_y + strength_samples[i - 1] * (graph_height / 5)]
-            end_point = [graph_start_x + times[i] * (graph_length / 4), graph_start_y + strength_samples[i] * (graph_height / 5)]
-            visual.Line(win, start=start_point, end=end_point, lineWidth=10, lineColor='red').draw()
+            start_point = [graph_start_x + times[i - 1] * (graph_length / recording_duration), graph_start_y + strength_samples[i - 1] * (graph_height / 6)]
+            end_point = [graph_start_x + times[i] * (graph_length / recording_duration), graph_start_y + strength_samples[i] * (graph_height / 6)]
+            visual.Line(win, start=start_point, end=end_point, lineWidth=8, lineColor='red').draw()
         win.flip()
         hf.exit_q(win)
 

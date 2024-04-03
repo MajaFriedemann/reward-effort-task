@@ -119,17 +119,47 @@ def outcome_bars(win, outcome_mean_magnitude, outcome_uncertainty, outcome_mean_
     outlines = []
     filled_bars = []
     for i, height in enumerate(heights):
-        outline = visual.Rect(win, width=71, height=(outcome_mean_max+4)*18, pos=[-400+71*i, ((outcome_mean_max+4)*18)/2-100], lineColor='white')
-        filled_bar = visual.Rect(win, width=70, height=height*18, pos=[-400+71*i, (height*18)/2-100], fillColor='salmon', lineColor='white')
+        outline = visual.Rect(win, width=71, height=(outcome_mean_max+4)*18, pos=[-380+71*i, ((outcome_mean_max+4)*18)/2-60], lineColor='white')
+        filled_bar = visual.Rect(win, width=70, height=height*18, pos=[-380+71*i, (height*18)/2-60], fillColor='salmon', lineColor='white')
         outlines.append(outline)
         filled_bars.append(filled_bar)
 
     return outlines + filled_bars
 
 
+def effort_bar(win, effort_level):
+    bar_elements = []
+    bar_pos_x = 50  # x position where the left side of the effort bar should start
 
+    outline = visual.Rect(
+        win,
+        width=100 * 3,
+        height=81,
+        pos=(bar_pos_x + (100 * 3) / 2, 10),
+        lineColor='white',
+        lineWidth=7
+    )
 
+    filled_bar = visual.Rect(
+        win,
+        width=effort_level * 3,
+        height=80,
+        pos=(bar_pos_x + (effort_level * 3) / 2, 10),
+        fillColor='yellow'
+    )
 
+    effort_text = 'EFFORT: {}%'.format(effort_level)
+    text = visual.TextStim(
+        win,
+        text=effort_text,
+        height=26,
+        pos=(bar_pos_x, 75),
+        color='white',
+        bold=True,
+        font='Monospace',
+        alignHoriz='left'
+    )
 
-
+    bar_elements.extend([outline, filled_bar, text])
+    return bar_elements
 

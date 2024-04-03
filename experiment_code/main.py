@@ -136,6 +136,10 @@ button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.p
 big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Monospace')
+upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -240), fillColor='white')
+upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_button.pos, color='black', bold=True,font='Monospace')
+lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -320), fillColor='white')
+lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_button.pos, color='black', bold=True,font='Monospace')
 
 
 ###################################
@@ -188,9 +192,10 @@ trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['
 # loop over the trial_schedule dataframe
 for i, trial in trial_schedule.iterrows():
     bars = hf.outcome_bars(win, trial['mean_magnitude'], trial['uncertainty'], np.max(gv['outcome_mean_magnitude_levels']))
-    stimuli = [bars, green_button, button_txt, instructions_txt]
+    effort_bar = hf.effort_bar(win, trial['effort'])
+    stimuli = [bars, effort_bar, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
-    hf.check_button(win, green_button, stimuli, mouse)
+    hf.check_button(win, upper_button, stimuli, mouse)
 
 
 

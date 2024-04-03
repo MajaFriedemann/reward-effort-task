@@ -10,7 +10,6 @@ Maja Friedemann 2024
 # IMPORT PACKAGES
 ###################################
 import os
-import numpy as np
 import json
 from psychopy import gui, visual, core, data, event
 import helper_functions as hf

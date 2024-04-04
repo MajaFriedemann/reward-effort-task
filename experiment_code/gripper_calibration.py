@@ -127,7 +127,7 @@ hf.check_button(win, green_button, stimuli, mouse) # show instructions until but
 # CALIBRATE HAND GRIPPER ZERO BASELINE
 instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
 hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-gripper_zero_baseline = None
+gripper_zero_baseline = graph_start_y  # set the gripper zero baseline to the bottom of the graph if we are in dummy mode
 for countdown in range(3, 0, -1):
     big_txt.text = str(countdown)
     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
@@ -168,7 +168,7 @@ for trial in range(3):  # 3 calibration trials
     recording_started = False
     start_time = None
     while not recording_started:
-        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
+        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline)
         # threshold to start recording
         if strength > 0.1:
             recording_started = True
@@ -177,7 +177,7 @@ for trial in range(3):  # 3 calibration trials
     # begin recording for 4 seconds after strength threshold is exceeded
     recording_duration = 4
     while core.getTime() - start_time < recording_duration:
-        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, graph_start_y)
+        strength = hf.sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline)
         strength_samples.append(strength)
         current_time = core.getTime() - start_time
         times.append(current_time)

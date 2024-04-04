@@ -137,7 +137,7 @@ green_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -
 button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.pos, color='black', bold=True,font='Monospace')
 big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
-instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Monospace')
+instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 250], wrapWidth=1200, color='white', font='Monospace')
 upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -240), fillColor='white')
 upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_button.pos, color='black', bold=True,font='Monospace')
 lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -320), fillColor='white')
@@ -188,7 +188,7 @@ win.mouseVisible = True
 # clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
-# TASK
+# TASK TRIALS
 # generate trial schedule
 trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['effort_levels'], gv['outcome_mean_magnitude_levels'], gv['outcome_uncertainty_levels'], gv['block_types'], gv['n_trials_per_block'])
 last_block_type = None
@@ -216,6 +216,11 @@ for i, trial in trial_schedule.iterrows():
     # record response
     if clicked_button == upper_button:
         response = 'accept'
+        instructions_top_txt.text = "You accepted the offer. Squeeze the hand gripper to the required level for 1 second."
+        stimuli = [instructions_top_txt, trial_stimuli]
+        hf.draw_all_stimuli(win, stimuli)
+        core.wait(5)
+
     elif clicked_button == lower_button:
         response = 'reject'
 

@@ -66,7 +66,6 @@ def check_button(win, buttons, stimuli, mouse):
         draw_all_stimuli(win, stimuli)  # redraw stimuli and check again
 
 
-
 def convert_rgb_to_psychopy(rgb):
     """
     turn rgp colour code to colour format that PsychoPy needs
@@ -74,14 +73,14 @@ def convert_rgb_to_psychopy(rgb):
     return tuple([(x / 127.5) - 1 for x in rgb])
 
 
-def sample_strength(DUMMY, mouse, gripper, gripper_zero_baseline, mouse_zero_baseline):
+def sample_strength(dummy, mouse, gripper, zero_baseline):
     """
     sample strength from gripper or mouse, zero baseline corrected
     """
-    if DUMMY:
-        strength = (mouse.getPos()[1] - mouse_zero_baseline) / 80
+    if dummy:
+        strength = (mouse.getPos()[1] - zero_baseline) / 80
     else:
-        strength = gripper.sample()[0] - gripper_zero_baseline
+        strength = gripper.sample()[0] - zero_baseline
     core.wait(0.01)
     return strength
 
@@ -152,12 +151,12 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         for coin_index in range(height):
             if block_type == 'avoid':
                 # For 'avoid', align coins to the top of the outline and set the background colour.
-                win.color = tuple([(x / 127.5) - 1 for x in [135, 45, 11]])
-                coin_pos_y = ((outcome_mean_max + 4) * scaling_factor) - (coin_height / 2 + coin_height * coin_index) - 60
+                win.color = tuple([(x / 127.5) - 1 for x in [145, 45, 11]])
+                coin_pos_y = ((outcome_mean_max + 4) * scaling_factor) - (coin_height / 2 + coin_height * coin_index) - 80
             else:
                 # For 'approach', align coins to the bottom of the outline and set the background colour.
                 win.color = tuple([(x / 127.5) - 1 for x in [64, 83, 27]])
-                coin_pos_y = (coin_height / 2 + coin_height * coin_index) - 60
+                coin_pos_y = (coin_height / 2 + coin_height * coin_index) - 80
             coin = visual.Rect(win,
                                width=70,
                                height=coin_height,
@@ -170,7 +169,7 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         outline = visual.Rect(win,
                               width=90,
                               height=(outcome_mean_max + 4) * scaling_factor + 2,
-                              pos=[150 + 90 * i, ((outcome_mean_max + 4) * scaling_factor) / 2 - 60],
+                              pos=[150 + 90 * i, ((outcome_mean_max + 4) * scaling_factor) / 2 - 80],
                               lineColor='white',
                               lineWidth=3
                               )
@@ -184,7 +183,7 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         win,
         width=100 * 3,
         height=80 + 2,
-        pos=(bar_pos_x + (100 * 3) / 2, 135),
+        pos=(bar_pos_x + (100 * 3) / 2, 115),
         lineColor='white',
         lineWidth=5
     )
@@ -192,7 +191,7 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         win,
         width=effort_level * 3,
         height=80,
-        pos=(bar_pos_x + (effort_level * 3) / 2, 135),
+        pos=(bar_pos_x + (effort_level * 3) / 2, 115),
         fillColor='white'
     )
     effort_text = 'EFFORT: {}%'.format(effort_level)
@@ -200,7 +199,7 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         win,
         text=effort_text,
         height=26,
-        pos=(bar_pos_x, 200),
+        pos=(bar_pos_x, 180),
         color='white',
         bold=True,
         font='Monospace',
@@ -211,4 +210,13 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
     return outlines + coin_stacks + bar_elements
 
 
-
+def sample_effort(dummy, mouse, gripper, zero_baseline, max_strength):
+    """
+    sample effort from gripper or mouse, zero_baseline and max_strength corrected
+    """
+    if dummy:
+        effort = (mouse.getPos()[1] - zero_baseline)
+    else:
+        effort = (gripper.sample()[0] - zero_baseline) / max_strength * 100
+    core.wait(0.01)
+    return effort

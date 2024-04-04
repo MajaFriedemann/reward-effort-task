@@ -53,8 +53,10 @@ else:
 gv = dict(
     n_trials_per_combination=5,
     effort_levels = [40, 60, 80, 100],
-    outcome_mean_magnitude_levels= [5, 7, 9],
+    outcome_mean_magnitude_levels= [5, 7, 9],  # cannot be below 4
     outcome_uncertainty_levels = ['safe', '25/50/25', '50/50'],
+    block_types = ['approach', 'avoid'],
+    n_trials_per_block = 2,
 )
 
 
@@ -118,8 +120,8 @@ if not DUMMY:
 ###################################
 win = visual.Window(
     size=[1512, 982],  # set correct monitor size
-    fullscr=True,  # fullscreen mode
-    screen=0,  # adjust if using multiple monitors
+    fullscr=False,  # fullscreen mode
+    screen=1,  # adjust if using multiple monitors
     allowGUI=False,
     color='black',
     blendMode='avg',
@@ -151,10 +153,10 @@ mouse = event.Mouse()
 win.mouseVisible = True
 
 
-# WELCOME
-stimuli = [green_button, button_txt, big_txt]
-hf.draw_all_stimuli(win, stimuli)
-hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+# # WELCOME
+# stimuli = [green_button, button_txt, big_txt]
+# hf.draw_all_stimuli(win, stimuli)
+# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # # INSTRUCTIONS
@@ -163,7 +165,7 @@ hf.check_button(win, green_button, stimuli, mouse) # show instructions until but
 #                          "Click the 'NEXT' button to begin the calibration process.")
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli)
-# hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 #
 #
 # # CALIBRATE HAND GRIPPER ZERO BASELINE
@@ -183,21 +185,57 @@ hf.check_button(win, green_button, stimuli, mouse) # show instructions until but
 #                          "There will be 3 trials. When you feel ready to show us how strong your grip is, press 'NEXT' to begin.")
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli, 1)
-# hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # TASK
-trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['effort_levels'], gv['outcome_mean_magnitude_levels'], gv['outcome_uncertainty_levels'])
+# generate trial schedule
+trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['effort_levels'], gv['outcome_mean_magnitude_levels'], gv['outcome_uncertainty_levels'], gv['block_types'], gv['n_trials_per_block'])
+last_block_type = None
+response = None
 
-# loop over the trial_schedule dataframe
+# loop over the trials
 for i, trial in trial_schedule.iterrows():
-    bars = hf.outcome_bars(win, trial['mean_magnitude'], trial['uncertainty'], np.max(gv['outcome_mean_magnitude_levels']))
-    effort_bar = hf.effort_bar(win, trial['effort'])
-    stimuli = [bars, effort_bar, upper_button, upper_button_txt, lower_button, lower_button_txt]
+
+    # break between blocks
+    current_block_type = trial['block_type']
+    if current_block_type != last_block_type:
+        info['block_count'] += 1
+        last_block_type = current_block_type
+        win.color = 'black'
+        stimuli = [instructions_txt, green_button, button_txt]
+        hf.draw_all_stimuli(win, stimuli)
+        clicked_button = hf.check_button(win, [green_button], stimuli, mouse)
+
+    # present trial offer
+    trial_stimuli = hf.trial_stimuli(win, trial['effort'], trial['mean_magnitude'], trial['uncertainty'], np.max(gv['outcome_mean_magnitude_levels']), trial['block_type'])
+    stimuli = [trial_stimuli, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
-    hf.check_button(win, upper_button, stimuli, mouse)
+    clicked_button = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
 
+    # record response
+    if clicked_button == upper_button:
+        response = 'accept'
+    elif clicked_button == lower_button:
+        response = 'reject'
 
+    # save trial data
+    info['trial_count'] += 1
+    info['block_type'] = trial['block_type']
+    info['outcome_mean_magnitude'] = trial['mean_magnitude']
+    info['outcome_uncertainty'] = trial['uncertainty']
+    info['effort_required'] = trial['effort']
+    info['trial_count'] += 1
+    info['strength_trace'] = ''
+    info['effort_trace'] = ''
+    info['effort_expended'] = None
+    info['effort_response_time'] = None
+    info['response'] = response
+    info['response_time'] = None
+    info['points'] = None
+    info['cumulative_points'] = None
+    datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
+    datafile.flush()
 
 
 

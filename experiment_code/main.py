@@ -152,6 +152,7 @@ button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.p
 big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 300], wrapWidth=1200, color='white', font='Monospace')
+left_side_txt = visual.TextStim(win=win, text='Points', height=70, pos=(-300, 60), color='white', bold=True,font='Monospace')
 upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -240), fillColor='white')
 upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_button.pos, color='black', bold=True,font='Monospace')
 lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -320), fillColor='white')
@@ -241,11 +242,14 @@ for i, trial in trial_schedule.iterrows():
         if current_block_type == 'approach':
             if result == 'success':
                 instructions_top_txt.text = "Well done! You get points."
-                # function to randomly select one of the four stacks of coins, taking heights as argument
-                stimuli = [outlines, coin_stacks, bar_elements, instructions_top_txt]
+                selected_stack_index = random.randint(0, 3)  # randomly select one of the four stacks of coins
+                selected_stack_height = heights[selected_stack_index] # get the number of coins of the selected stack
+                selected_stack_outline = outlines[selected_stack_index]
+                selected_stack_outline.lineColor = 'gold' # highlight the selected stack
+                left_side_txt.text = '+'+ str(selected_stack_height) # show the number of coins of the selected stack
+                stimuli = [coin_stacks, instructions_top_txt, selected_stack_outline, left_side_txt]
                 hf.draw_all_stimuli(win, stimuli)
                 core.wait(10)
-                print(heights)
 
 
 

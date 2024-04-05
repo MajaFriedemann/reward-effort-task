@@ -7,14 +7,9 @@ Maja Friedemann 2024
 ###################################
 # IMPORT PACKAGES
 ###################################
-import os
-import csv
-import json
 import random
 from psychopy import gui, visual, core, data, event
 import pandas as pd
-import numpy as np
-
 
 
 
@@ -47,12 +42,15 @@ def draw_all_stimuli(win, stimuli, wait=0.01):
     win.flip(), exit_q(win), core.wait(wait)
 
 
+from psychopy import core  # Ensure this import is at the top of your script
+
 def check_button(win, buttons, stimuli, mouse):
     """
-    check for button hover and click for multiple buttons.
-    return the button object that was clicked.
+    Check for button hover and click for multiple buttons.
+    Return the button object that was clicked and the response time.
     """
     draw_all_stimuli(win, stimuli, 0.2)
+    response_timer = core.Clock()  # Start the response timer
     button_glows = [visual.Rect(win, width=button.width+15, height=button.height+15, pos=button.pos, fillColor=button.fillColor, opacity=0.5) for button in buttons]
 
     while True:  # Use an infinite loop that will break when a button is clicked
@@ -60,10 +58,12 @@ def check_button(win, buttons, stimuli, mouse):
             if button.contains(mouse):  # check for hover
                 button_glow.draw()  # hover, draw button glow
             if mouse.isPressedIn(button):  # check for click
+                response_time = response_timer.getTime()  # Get the response time
                 core.wait(0.5)  # add delay to provide feedback of a click
-                return button  # return the button that was clicked
+                return button, response_time  # return the button that was clicked and the response time
 
         draw_all_stimuli(win, stimuli)  # redraw stimuli and check again
+
 
 
 def convert_rgb_to_psychopy(rgb):
@@ -78,7 +78,7 @@ def sample_strength(dummy, mouse, gripper, zero_baseline):
     sample strength from gripper or mouse, zero baseline corrected
     """
     if dummy:
-        strength = (mouse.getPos()[1] - zero_baseline) / 80
+        strength = (mouse.getPos()[1] - zero_baseline) / 80 # vertical movement
     else:
         strength = gripper.sample()[0] - zero_baseline
     core.wait(0.01)
@@ -125,7 +125,7 @@ def generate_trial_schedule(n_trials_per_combination, effort_levels, outcome_mea
     return trial_schedule
 
 
-def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty, outcome_mean_max, block_type):
+def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty, outcome_mean_max, block_type, gv):
     """
     Generate the heights of 4 stacks of coins based on the mean magnitude and the type of uncertainty,
     and return them as visual.Rect objects stacked to represent coins. For 'avoid' blocks, the coins are aligned
@@ -133,14 +133,13 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
     Also generate the effort bar and return it as visual.Rect object.
     """
     # COIN STACKS
-    scaling_factor = 20  # scaling factor for the height of the coins
-    coin_height = (outcome_mean_max + 4) * scaling_factor / (outcome_mean_max + 4)  # height of one coin
+    coin_height = (outcome_mean_max + gv['uncertain_point_difference']) * gv['coin_scaling_factor'] / (outcome_mean_max + gv['uncertain_point_difference'])  # height of one coin
     if outcome_uncertainty == 'safe':
         heights = [outcome_mean_magnitude, outcome_mean_magnitude, outcome_mean_magnitude, outcome_mean_magnitude]
     elif outcome_uncertainty == '25/50/25':
-        heights = [outcome_mean_magnitude - 4, outcome_mean_magnitude, outcome_mean_magnitude, outcome_mean_magnitude + 4]
+        heights = [outcome_mean_magnitude - gv['uncertain_point_difference'], outcome_mean_magnitude, outcome_mean_magnitude, outcome_mean_magnitude + gv['uncertain_point_difference']]
     elif outcome_uncertainty == '50/50':
-        heights = [outcome_mean_magnitude - 4, outcome_mean_magnitude - 4, outcome_mean_magnitude + 4, outcome_mean_magnitude + 4]
+        heights = [outcome_mean_magnitude - gv['uncertain_point_difference'], outcome_mean_magnitude - gv['uncertain_point_difference'], outcome_mean_magnitude + gv['uncertain_point_difference'], outcome_mean_magnitude + gv['uncertain_point_difference']]
     else:
         raise ValueError('Invalid uncertainty type')
     random.shuffle(heights)  # randomize the order of bars
@@ -151,25 +150,25 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         for coin_index in range(height):
             if block_type == 'avoid':
                 # For 'avoid', align coins to the top of the outline and set the background colour.
-                win.color = tuple([(x / 127.5) - 1 for x in [145, 45, 11]])
-                coin_pos_y = ((outcome_mean_max + 4) * scaling_factor) - (coin_height / 2 + coin_height * coin_index) - 80
+                win.color = convert_rgb_to_psychopy(gv['avoid_block_colour'])
+                coin_pos_y = ((outcome_mean_max + gv['uncertain_point_difference']) * gv['coin_scaling_factor']) - (coin_height / 2 + coin_height * coin_index) + gv['coin_pos_y']
             else:
                 # For 'approach', align coins to the bottom of the outline and set the background colour.
-                win.color = tuple([(x / 127.5) - 1 for x in [64, 83, 27]])
-                coin_pos_y = (coin_height / 2 + coin_height * coin_index) - 80
+                win.color = convert_rgb_to_psychopy(gv['approach_block_colour'])
+                coin_pos_y = (coin_height / 2 + coin_height * coin_index) + gv['coin_pos_y']
             coin = visual.Rect(win,
-                               width=70,
+                               width=gv['coin_distance_x']-20,
                                height=coin_height,
-                               pos=[150 + 90 * i, coin_pos_y],
+                               pos=[gv['coin_pos_x'] + gv['coin_distance_x'] * i, coin_pos_y],
                                fillColor='gold',
                                lineColor='black',
                                lineWidth=2
                                )
             coins.append(coin)
         outline = visual.Rect(win,
-                              width=90,
-                              height=(outcome_mean_max + 4) * scaling_factor + 2,
-                              pos=[150 + 90 * i, ((outcome_mean_max + 4) * scaling_factor) / 2 - 80],
+                              width=gv['coin_distance_x'],
+                              height=(outcome_mean_max + gv['uncertain_point_difference']) * gv['coin_scaling_factor'] + 2,
+                              pos=[gv['coin_pos_x']  + gv['coin_distance_x'] * i, ((outcome_mean_max + gv['uncertain_point_difference']) * gv['coin_scaling_factor']) / 2 + gv['coin_pos_y'] ],
                               lineColor='white',
                               lineWidth=3
                               )
@@ -178,20 +177,19 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
 
     # EFFORT BAR
     bar_elements = []
-    bar_pos_x = -400  # x position where the left side of the effort bar should start
     outline = visual.Rect(
         win,
-        width=100 * 3,
-        height=80 + 2,
-        pos=(bar_pos_x + (100 * 3) / 2, 115),
+        width=100 * gv['effort_scaling_factor'],
+        height=gv['bar_height'] + 2,
+        pos=(gv['bar_pos_x'] + (100 * gv['effort_scaling_factor']) / 2, gv['bar_pos_y']),
         lineColor='white',
         lineWidth=5
     )
     filled_bar = visual.Rect(
         win,
-        width=effort_level * 3,
-        height=80,
-        pos=(bar_pos_x + (effort_level * 3) / 2, 115),
+        width=effort_level * gv['effort_scaling_factor'],
+        height=gv['bar_height'],
+        pos=(gv['bar_pos_x'] + (effort_level * gv['effort_scaling_factor']) / 2, gv['bar_pos_y']),
         fillColor='white'
     )
     effort_text = 'EFFORT: {}%'.format(effort_level)
@@ -199,7 +197,7 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
         win,
         text=effort_text,
         height=26,
-        pos=(bar_pos_x, 180),
+        pos=(gv['bar_pos_x'], gv['bar_pos_y'] + 65),
         color='white',
         bold=True,
         font='Monospace',
@@ -207,16 +205,63 @@ def trial_stimuli(win, effort_level, outcome_mean_magnitude, outcome_uncertainty
     )
     bar_elements.extend([outline, filled_bar, text])
 
-    return outlines + coin_stacks + bar_elements
+    return outlines, coin_stacks, bar_elements, heights
 
 
-def sample_effort(dummy, mouse, gripper, zero_baseline, max_strength):
+def sample_effort(win, dummy, mouse, gripper, zero_baseline, max_strength, effort, stimuli, gv):
     """
-    sample effort from gripper or mouse, zero_baseline and max_strength corrected
+    Sample effort from gripper or mouse, zero_baseline and max_strength corrected.
+    Effort needs to exceed a defined level for one consecutive second to be successful.
+    If success is not achieved within a set time window, the trial is considered a failure.
+    Outputs success/failure, the complete effort trace, and the average effort expended during the successful time window.
     """
-    if dummy:
-        effort = (mouse.getPos()[1] - zero_baseline)
-    else:
-        effort = (gripper.sample()[0] - zero_baseline) / max_strength * 100
-    core.wait(0.01)
-    return effort
+    effort_expended = 0
+    effort_trace = []
+    average_effort = 0
+    temp_effort_trace = []  # Temporary list to track efforts during success duration
+    success = False
+    trial_failed = False
+    success_time = None  # Track the time when effort first exceeds the target
+    trial_start_time = core.Clock()  # Initialize a clock to measure total trial time
+    dynamic_bar = visual.Rect(
+        win,
+        width=effort * gv['effort_scaling_factor'],
+        height=gv['bar_height'],
+        pos=(gv['bar_pos_x'] + (effort_expended * gv['effort_scaling_factor']) / 2, gv['bar_pos_y']),
+        fillColor=convert_rgb_to_psychopy([255, 113, 91]),
+        opacity=0.9
+    )
+    stimuli.append(dynamic_bar)
+
+    while not success and not trial_failed:
+        if trial_start_time.getTime() > 8:  # Check if max time allowed has passed
+            break  # Exit the loop if the trial is considered a failure
+
+        if dummy:
+            effort_expended = (mouse.getPos()[0] - zero_baseline)  # horizontal movement
+        else:
+            effort_expended = (gripper.sample()[0] - zero_baseline) / max_strength * 100
+        effort_trace.append(effort_expended)
+        dynamic_width = min(max(0, effort_expended * gv['effort_scaling_factor']), 100 * gv['effort_scaling_factor'])
+        dynamic_bar.width = dynamic_width
+        dynamic_bar.pos = (gv['bar_pos_x'] + dynamic_width / 2, gv['bar_pos_y'])
+        draw_all_stimuli(win, stimuli)
+
+        # Track effort for potential success duration
+        if effort_expended > effort:
+            if success_time is None:
+                success_time = trial_start_time.getTime()  # Mark the time when effort first exceeds target
+                temp_effort_trace = [effort_expended]  # Start tracking from this point
+            else:
+                temp_effort_trace.append(effort_expended)  # Continue tracking
+            if trial_start_time.getTime() - success_time >= 1.0:  # Check if it's been over a second
+                success = True
+                average_effort = sum(temp_effort_trace) / len(temp_effort_trace) if temp_effort_trace else 0
+        else:
+            success_time = None  # Reset if effort drops below target
+            temp_effort_trace.clear()  # Clear temporary efforts since condition was not met
+
+    result = "success" if success else "failure"
+    return result, effort_trace, average_effort  # Return outcome, the complete effort trace, and the average of successful efforts
+
+

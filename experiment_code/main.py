@@ -13,10 +13,10 @@ Maja Friedemann 2024
 import os
 import csv
 import json
-import random
 import numpy as np
 from psychopy import gui, visual, core, data, event
 import helper_functions as hf
+import random
 
 print('Reminder: Press Q to quit.')
 
@@ -53,10 +53,24 @@ else:
 gv = dict(
     n_trials_per_combination=5,
     effort_levels = [40, 60, 80, 100],
-    outcome_mean_magnitude_levels= [5, 7, 9],  # cannot be below 4
+    outcome_mean_magnitude_levels= [5, 7, 9],  # min cannot be below uncertain_point_difference
     outcome_uncertainty_levels = ['safe', '25/50/25', '50/50'],
     block_types = ['approach', 'avoid'],
     n_trials_per_block = 2,
+    effort_duration = 1,  # second duration for which the effort needs to be exerted
+
+    # visual parameters
+    bar_pos_x = -400,  # x position of the effort bar
+    bar_pos_y = 60,  # y position of the effort bar
+    bar_height = 80,  # height of the effort bar
+    effort_scaling_factor = 3,  # scaling factor for the width of the effort bar
+    coin_pos_y = -110,  # y position of the coins
+    coin_pos_x = 150,  # x position of the coins
+    coin_distance_x = 90,  # distance between coin stacks
+    coin_scaling_factor = 20,  # scaling factor for the height of the coins
+    uncertain_point_difference = 4,  # value increase/decrease for uncertain offers
+    avoid_block_colour = (145, 45, 11),  # RGB colour for avoid block
+    approach_block_colour = (64, 83, 27),  # RGB colour for approach block
 )
 
 
@@ -85,12 +99,12 @@ info = dict(
     effort_required=None,  # effort level to approach/avoid the outcome
     response=None,  # accept or reject
     response_time=None,  # time taken to accept or reject
+    result = None,  # did participant manage to exert the required effort
     points=None,  # points won or lost in the trial
     cumulative_points=None,  # points across trials
 
-    strength_trace='',
     effort_trace='',
-    effort_expended=None, # actual effort expended on trial during the 1 second where effort is above the threshold
+    effort_expended=None, # average effort expended on trial during the 1 second where effort is above the threshold
     effort_response_time=None
 )
 
@@ -137,7 +151,7 @@ green_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -
 button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.pos, color='black', bold=True,font='Monospace')
 big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
-instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 250], wrapWidth=1200, color='white', font='Monospace')
+instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 300], wrapWidth=1200, color='white', font='Monospace')
 upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -240), fillColor='white')
 upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_button.pos, color='black', bold=True,font='Monospace')
 lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -320), fillColor='white')
@@ -156,7 +170,7 @@ win.mouseVisible = True
 # # WELCOME
 # stimuli = [green_button, button_txt, big_txt]
 # hf.draw_all_stimuli(win, stimuli)
-# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # # INSTRUCTIONS
@@ -165,7 +179,7 @@ win.mouseVisible = True
 #                          "Click the 'NEXT' button to begin the calibration process.")
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli)
-# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 #
 #
 # # CALIBRATE HAND GRIPPER ZERO BASELINE
@@ -185,17 +199,20 @@ win.mouseVisible = True
 #                          "There will be 3 trials. When you feel ready to show us how strong your grip is, press 'NEXT' to begin.")
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli, 1)
-# clicked_button = hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # TASK TRIALS
 # generate trial schedule
 trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['effort_levels'], gv['outcome_mean_magnitude_levels'], gv['outcome_uncertainty_levels'], gv['block_types'], gv['n_trials_per_block'])
 last_block_type = None
-response = None
 
 # loop over the trials
 for i, trial in trial_schedule.iterrows():
+    response = None
+    effort_trace = None
+    average_effort = None
+    result = None
 
     # break between blocks
     current_block_type = trial['block_type']
@@ -205,24 +222,63 @@ for i, trial in trial_schedule.iterrows():
         win.color = 'black'
         stimuli = [instructions_txt, green_button, button_txt]
         hf.draw_all_stimuli(win, stimuli)
-        clicked_button = hf.check_button(win, [green_button], stimuli, mouse)
+        hf.check_button(win, [green_button], stimuli, mouse)
 
     # present trial offer
-    trial_stimuli = hf.trial_stimuli(win, trial['effort'], trial['mean_magnitude'], trial['uncertainty'], np.max(gv['outcome_mean_magnitude_levels']), trial['block_type'])
-    stimuli = [trial_stimuli, upper_button, upper_button_txt, lower_button, lower_button_txt]
+    outlines, coin_stacks, bar_elements, heights = hf.trial_stimuli(win, trial['effort'], trial['mean_magnitude'], trial['uncertainty'], np.max(gv['outcome_mean_magnitude_levels']), trial['block_type'], gv)
+    stimuli = [outlines, coin_stacks, bar_elements, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
-    clicked_button = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
+    clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
 
-    # record response
+    # if accepted, make the participant exert the effort
     if clicked_button == upper_button:
         response = 'accept'
         instructions_top_txt.text = "You accepted the offer. Squeeze the hand gripper to the required level for 1 second."
-        stimuli = [instructions_top_txt, trial_stimuli]
-        hf.draw_all_stimuli(win, stimuli)
-        core.wait(5)
+        stimuli = [instructions_top_txt, outlines, coin_stacks, bar_elements]
+        result, effort_trace, average_effort = hf.sample_effort(win, DUMMY, mouse, gripper, 0, max_strength, trial['effort'], stimuli, gv)
 
+        # approach block
+        if current_block_type == 'approach':
+            if result == 'success':
+                instructions_top_txt.text = "Well done! You get points."
+                # function to randomly select one of the four stacks of coins, taking heights as argument
+                stimuli = [outlines, coin_stacks, bar_elements, instructions_top_txt]
+                hf.draw_all_stimuli(win, stimuli)
+                core.wait(10)
+                print(heights)
+
+
+
+            else:
+                instructions_top_txt.text = "You did not reach the required effort. Minus points for you."
+
+        # avoid block
+        else:
+            if result == 'success':
+                instructions_top_txt.text = "Well done! You avoided the loss."
+            else:
+                instructions_top_txt.text = "You did not reach the required effort. Double minus points for you."
+
+
+
+
+    # if rejected
     elif clicked_button == lower_button:
         response = 'reject'
+
+        # approach block
+        if current_block_type == 'approach':
+            instructions_top_txt.text = "You rejected the offer. No points for you."
+
+        # avoid block
+        else:
+            instructions_top_txt.text = "You rejected the offer. You get a loss."
+
+
+
+
+
+
 
     # save trial data
     info['trial_count'] += 1
@@ -230,18 +286,16 @@ for i, trial in trial_schedule.iterrows():
     info['outcome_mean_magnitude'] = trial['mean_magnitude']
     info['outcome_uncertainty'] = trial['uncertainty']
     info['effort_required'] = trial['effort']
-    info['trial_count'] += 1
-    info['strength_trace'] = ''
-    info['effort_trace'] = ''
-    info['effort_expended'] = None
+    info['effort_trace'] = '"' + json.dumps(effort_trace) + '"'
+    info['effort_expended'] = average_effort
     info['effort_response_time'] = None
     info['response'] = response
-    info['response_time'] = None
+    info['response_time'] = response_time
+    info['result'] = result
     info['points'] = None
     info['cumulative_points'] = None
     datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
     datafile.flush()
-
 
 
 

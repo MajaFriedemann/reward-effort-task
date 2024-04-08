@@ -1,2 +1,0 @@
-expName,curec_ID,session_nr,date,end_date,participant,age,gender,max_strength,block_count,trial_count,block_type,outcome_mean_magnitude,outcome_uncertainty,effort_required,response,response_time,points,cumulative_points,effort_trace,effort_expended,effort_response_time
-reward-strength-pgACC-TUS,R88533/RE002,1,2024-04-05_12h31.43.797,None,999,,,2.686106363932292,1,2,approach,7,safe,60,accept,None,None,None,,None,None

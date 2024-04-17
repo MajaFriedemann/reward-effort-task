@@ -134,7 +134,7 @@ if not DUMMY:
 ###################################
 win = visual.Window(
     size=[1512, 982],  # set correct monitor size
-    fullscr=False,  # fullscreen mode
+    fullscr=True,  # fullscreen mode
     screen=1,  # adjust if using multiple monitors
     allowGUI=False,
     color='black',
@@ -255,6 +255,7 @@ for i, trial in trial_schedule.iterrows():
 
             else:
                 instructions_top_txt.text = "You did not reach the required effort. Minus points for you."
+                # lowest possible - 1 (ie -1)
 
         # avoid block
         else:
@@ -262,6 +263,7 @@ for i, trial in trial_schedule.iterrows():
                 instructions_top_txt.text = "Well done! You avoided the loss."
             else:
                 instructions_top_txt.text = "You did not reach the required effort. Double minus points for you."
+                # lowest possible - 1 (ie -14)
 
 
 

@@ -265,3 +265,73 @@ def sample_effort(win, dummy, mouse, gripper, zero_baseline, max_strength, effor
     return result, effort_trace, average_effort  # Return outcome, the complete effort trace, and the average of successful efforts
 
 
+def handle_outcome_accept_approach(win, result, heights, outlines, left_side_txt, instructions_top_txt, coin_stacks):
+    """
+    Handle the outcome of an accepted 'approach' block.
+    """
+    if result == 'success':
+        selected_stack_index = random.randint(0, 3)  # randomly select one of the four stacks of coins
+        selected_stack_height = heights[selected_stack_index]  # get the number of coins of the selected stack
+        selected_stack_outline = outlines[selected_stack_index]
+        # selected_stack_outline.lineColor = 'white' # highlight the selected stack
+        selected_stack_outline.lineWidth = 6
+        points = selected_stack_height
+        instructions_top_txt.text = "Well done!"
+        left_side_txt.text = str(points) + ' points'
+        stimuli = [coin_stacks, instructions_top_txt, selected_stack_outline, left_side_txt]
+    else:
+        points = -1
+        instructions_top_txt.text = "You did not reach the required effort."
+        left_side_txt.text = str(points) + ' points'
+        stimuli = [instructions_top_txt, left_side_txt]
+    draw_all_stimuli(win, stimuli)
+    core.wait(5)
+    return points
+
+
+def handle_outcome_accept_avoid(win, result, instructions_top_txt, left_side_txt):
+    """
+    Handle the outcome of an accepted 'avoid' block.
+    """
+    if result == 'success':
+        points = 0
+        instructions_top_txt.text = "Well done! You avoided the loss."
+    else:
+        points = -14
+        instructions_top_txt.text = "You did not reach the required effort."
+    left_side_txt.text = str(points) + ' points'
+    stimuli = [instructions_top_txt, left_side_txt]
+    draw_all_stimuli(win, stimuli)
+    core.wait(5)
+    return points
+
+
+def handle_outcome_reject_approach(win, instructions_top_txt, left_side_txt):
+    """
+    Handle the outcome of a rejected 'approach' block.
+    """
+    points = 0
+    instructions_top_txt.text = "You rejected the offer."
+    left_side_txt.text = str(points) + ' points'
+    stimuli = [instructions_top_txt]
+    draw_all_stimuli(win, stimuli)
+    core.wait(5)
+    return points
+
+
+def handle_outcome_reject_avoid(win, heights, outlines, left_side_txt, instructions_top_txt, coin_stacks):
+    """
+    Handle the outcome of a rejected 'avoid' block.
+    """
+    selected_stack_index = random.randint(0, 3)  # randomly select one of the four stacks of coins
+    selected_stack_height = heights[selected_stack_index]  # get the number of coins of the selected stack
+    selected_stack_outline = outlines[selected_stack_index]
+    # selected_stack_outline.lineColor = 'white' # highlight the selected stack
+    selected_stack_outline.lineWidth = 6
+    points = 0 - selected_stack_height
+    instructions_top_txt.text = "You rejected the offer."
+    left_side_txt.text = str(points) + ' points'
+    stimuli = [coin_stacks, instructions_top_txt, selected_stack_outline, left_side_txt]
+    draw_all_stimuli(win, stimuli)
+    core.wait(5)
+    return points

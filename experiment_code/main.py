@@ -69,8 +69,8 @@ gv = dict(
     coin_distance_x = 90,  # distance between coin stacks
     coin_scaling_factor = 20,  # scaling factor for the height of the coins
     uncertain_point_difference = 4,  # value increase/decrease for uncertain offers
-    avoid_block_colour = (145, 45, 11),  # RGB colour for avoid block
-    approach_block_colour = (64, 83, 27),  # RGB colour for approach block
+    avoid_block_colour = (96, 73, 90),  # RGB colour for avoid block - fine for red-green colour blindness
+    approach_block_colour = (94, 158, 233),  # RGB colour for approach block - fine for red-green colour blindness
 )
 
 
@@ -207,13 +207,14 @@ win.mouseVisible = True
 # generate trial schedule
 trial_schedule = hf.generate_trial_schedule(gv['n_trials_per_combination'], gv['effort_levels'], gv['outcome_mean_magnitude_levels'], gv['outcome_uncertainty_levels'], gv['block_types'], gv['n_trials_per_block'])
 last_block_type = None
+response = None
+effort_trace = None
+average_effort = None
+result = None
+points = None
 
 # loop over the trials
 for i, trial in trial_schedule.iterrows():
-    response = None
-    effort_trace = None
-    average_effort = None
-    result = None
 
     # break between blocks
     current_block_type = trial['block_type']
@@ -237,52 +238,22 @@ for i, trial in trial_schedule.iterrows():
         instructions_top_txt.text = "You accepted the offer. Squeeze the hand gripper to the required level for 1 second."
         stimuli = [instructions_top_txt, outlines, coin_stacks, bar_elements]
         result, effort_trace, average_effort = hf.sample_effort(win, DUMMY, mouse, gripper, 0, max_strength, trial['effort'], stimuli, gv)
-
         # approach block
         if current_block_type == 'approach':
-            if result == 'success':
-                instructions_top_txt.text = "Well done! You get points."
-                selected_stack_index = random.randint(0, 3)  # randomly select one of the four stacks of coins
-                selected_stack_height = heights[selected_stack_index] # get the number of coins of the selected stack
-                selected_stack_outline = outlines[selected_stack_index]
-                selected_stack_outline.lineColor = 'gold' # highlight the selected stack
-                left_side_txt.text = '+'+ str(selected_stack_height) # show the number of coins of the selected stack
-                stimuli = [coin_stacks, instructions_top_txt, selected_stack_outline, left_side_txt]
-                hf.draw_all_stimuli(win, stimuli)
-                core.wait(10)
-
-
-
-            else:
-                instructions_top_txt.text = "You did not reach the required effort. Minus points for you."
-                # lowest possible - 1 (ie -1)
-
+            points = hf.handle_outcome_accept_approach(win, result, heights, outlines, left_side_txt, instructions_top_txt, coin_stacks)
         # avoid block
-        else:
-            if result == 'success':
-                instructions_top_txt.text = "Well done! You avoided the loss."
-            else:
-                instructions_top_txt.text = "You did not reach the required effort. Double minus points for you."
-                # lowest possible - 1 (ie -14)
-
-
-
+        elif current_block_type == 'avoid':
+            points = hf.handle_outcome_accept_avoid(win, result, instructions_top_txt, left_side_txt)
 
     # if rejected
     elif clicked_button == lower_button:
         response = 'reject'
-
         # approach block
         if current_block_type == 'approach':
-            instructions_top_txt.text = "You rejected the offer. No points for you."
-
+            points = hf.handle_outcome_reject_approach(win, instructions_top_txt, left_side_txt)
         # avoid block
-        else:
-            instructions_top_txt.text = "You rejected the offer. You get a loss."
-
-
-
-
+        elif current_block_type == 'avoid':
+            points = hf.handle_outcome_reject_avoid(win, heights, outlines, left_side_txt, instructions_top_txt, coin_stacks)
 
 
 
@@ -298,8 +269,8 @@ for i, trial in trial_schedule.iterrows():
     info['response'] = response
     info['response_time'] = response_time
     info['result'] = result
-    info['points'] = None
-    info['cumulative_points'] = None
+    info['points'] = points
+    info['cumulative_points'] = int(info['cumulative_points']) + points if info['cumulative_points'] is not None else points
     datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
     datafile.flush()
 

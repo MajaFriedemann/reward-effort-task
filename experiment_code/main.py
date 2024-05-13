@@ -24,10 +24,11 @@ print('Reminder: Press Q to quit.')
 ###################################
 # SESSION INFO
 ###################################
-expName = 'reward-strength-pgACC-TUS'
+expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
            'dummy (y/n)': 'y',
+           'EEG (y/n)': 'n',
            'session nr': '1',
            'age': '',
            'gender (f/m/o)': '',
@@ -35,6 +36,7 @@ expInfo = {'participant nr': '999',
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName) # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
 if not dlg.OK:
     core.quit()
+
 
 # get participant's max strength from calibration_data
 for filename in os.listdir('calibration_data'):
@@ -48,6 +50,7 @@ if max_strength is None:
     print('Max strength calibration file for participant not found.')
 else:
     print(max_strength)
+
 
 # variables in gv are used to structure the task
 gv = dict(

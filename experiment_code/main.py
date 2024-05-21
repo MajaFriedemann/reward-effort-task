@@ -171,39 +171,38 @@ mouse = event.Mouse()
 win.mouseVisible = True
 
 
-# # WELCOME
-# stimuli = [green_button, button_txt, big_txt]
-# hf.draw_all_stimuli(win, stimuli)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# WELCOME
+stimuli = [green_button, button_txt, big_txt]
+hf.draw_all_stimuli(win, stimuli)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
-# # INSTRUCTIONS
-# instructions_txt.text = ("Let's get ready to measure your grip strength! \n\n"
-#                          "First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
-#                          "Click the 'NEXT' button to begin the calibration process.")
-# stimuli = [green_button, button_txt, instructions_txt]
-# hf.draw_all_stimuli(win, stimuli)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-#
-#
-# # CALIBRATE HAND GRIPPER ZERO BASELINE
-# instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
-# hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-# gripper_zero_baseline = None
-# for countdown in range(3, 0, -1):
-#     big_txt.text = str(countdown)
-#     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
-#     if not DUMMY and countdown == 3:
-#         gripper_zero_baseline = gripper.sample()[0] # on 1, sample the gripper 0 baseline
-#
-#
-# # INSTRUCTIONS
-# instructions_txt.text = ("Great! Calibration is done. \n\n"
-#                          "Now, please pick up the hand gripper with the hand you're not using for the mouse. Make sure you have a comfortable yet firm grip. \n\n"
-#                          "There will be 3 trials. When you feel ready to show us how strong your grip is, press 'NEXT' to begin.")
-# stimuli = [green_button, button_txt, instructions_txt]
-# hf.draw_all_stimuli(win, stimuli, 1)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# INSTRUCTIONS
+instructions_txt.text = ("Let's get ready to measure your grip strength! \n\n"
+                         "First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
+                         "Click the 'NEXT' button to begin the calibration process.")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+
+
+# CALIBRATE HAND GRIPPER ZERO BASELINE
+instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
+hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+gripper_zero_baseline = None
+for countdown in range(3, 0, -1):
+    big_txt.text = str(countdown)
+    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
+    if not DUMMY and countdown == 3:
+        gripper_zero_baseline = gripper.sample()[0] # on 1, sample the gripper 0 baseline
+
+
+# INSTRUCTIONS
+instructions_txt.text = ("Great! Calibration is done. \n\n"
+                         "TASK INSTRUCTIONS")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli, 1)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # TASK TRIALS

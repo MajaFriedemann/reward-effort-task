@@ -112,7 +112,7 @@ win.mouseVisible = True
 # WELCOME
 stimuli = [green_button, button_txt, big_txt]
 hf.draw_all_stimuli(win, stimuli)
-hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # INSTRUCTIONS
@@ -121,7 +121,7 @@ instructions_txt.text = ("Let's get ready to measure your grip strength! \n\n"
                          "Click the 'NEXT' button to begin the calibration process.")
 stimuli = [green_button, button_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
-hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # CALIBRATE HAND GRIPPER ZERO BASELINE
@@ -141,7 +141,7 @@ instructions_txt.text = ("Great! Calibration is done. \n\n"
                          "There will be 3 trials. When you feel ready to show us how strong your grip is, press 'NEXT' to begin.")
 stimuli = [green_button, button_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli, 1)
-hf.check_button(win, green_button, stimuli, mouse) # show instructions until button is pressed
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 # CALIBRATE PARTICIPANT MAX GRIP STRENGTH
@@ -226,7 +226,7 @@ datafile.flush()
 
 
 # THANK YOU
-big_txt.text = 'Your grip strength test is completed.\n\nWell done!'
+big_txt.text = 'Well done!\n\nYour grip strength test is completed.'
 hf.draw_all_stimuli(win,[big_txt], 8)
 
 

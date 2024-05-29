@@ -1,4 +1,7 @@
 """
+THIS IS NOW IN 'OLD' BECAUSE I WAS USING THE MONEY STACK REWARD STIMULI
+NOW WE USE AN ANIMATION AND HAVE DIFFERENT REWARD LEVELS, EFFORT LEVELS, REWARD UNCERTAINTY
+
 script for the main task (use the gripper labelled as LEFT)
 if using the hand-gripper (rather than DUMMY version), run gripper_calibration.py once before this (only before the first session)
 to determine the participant's max grip strength

@@ -33,7 +33,7 @@ try:
      #mpdev = windll.LoadLibrary('C:\\Program Files (x86)\\BIOPAC Systems, Inc\\BIOPAC Hardware API 2.2 Research\\Win32\\mpdev.dll')
 except:
 	try:
-		mpdev = windll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)),'mpdev.dll'))
+		mpdev = windll.LoadLibrary(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../mpdev.dll'))
 	except:
 		raise Exception("Error in libmpdev: could not load mpdev.dll")
 

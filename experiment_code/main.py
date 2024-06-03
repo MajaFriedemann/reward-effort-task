@@ -35,9 +35,9 @@ expInfo = {'participant nr': '999',
            'age': '',
            'gender (f/m/o)': '',
            }
-dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
-if not dlg.OK:
-    core.quit()
+# dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
+# if not dlg.OK:
+#     core.quit()
 
 # PARTICIPANT MAX GRIP STRENGTH
 for filename in os.listdir('calibration_data'):
@@ -69,6 +69,10 @@ gv = dict(
     effort_level = 60,  # or anything from 50 to 100
     outcome_magnitude_levels = 6,  # or anything from 2 to 10
     effort_duration = 1,  # second duration for which the effort needs to be exerted
+
+    # visual parameters
+    effort_bar_width = 65,
+    effort_bar_height = 138,
 )
 
 
@@ -192,7 +196,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 # hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 # TASK TRIALS
-win.color = hf.convert_rgb_to_psychopy([21, 96, 130])
+win.color = hf.convert_rgb_to_psychopy([5, 74, 103])
 win.flip()
 
 # present trial offer
@@ -204,8 +208,8 @@ clicked_button, response_time = hf.check_button(win, [upper_button, lower_button
 # if accepted, make the participant exert the effort
 if clicked_button == upper_button:
     response = 'accept'
-    instructions_top_txt.text = "You accepted the offer. Squeeze the hand gripper to the required level for 1 second."
-    stimuli = [instructions_top_txt, effort_outcome_stimuli]
+    # instructions_top_txt.text = "You accepted the offer. Squeeze the hand gripper to the required level for 1 second."
+    stimuli = [effort_outcome_stimuli]
     result, effort_trace, average_effort = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, gv)
 
 

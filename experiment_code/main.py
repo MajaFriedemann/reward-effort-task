@@ -144,8 +144,7 @@ datafile.flush()
 win = visual.Window(
         size=[1512, 982],  # set to actual screen size
         fullscr=True,  # fullscreen mode
-        screen=1
-    ,
+        screen=1,
         allowGUI=False,
         color='black',
         blendMode='avg',
@@ -235,28 +234,60 @@ while info['trial_count'] < gv['num_trials']:
     hf.draw_all_stimuli(win, stimuli)
     clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
 
-    # if accepted, make the participant exert the effort
+    # accept
     if clicked_button == upper_button:
         response = 'accept'
         stimuli = [trial_stimuli]
-        result, effort_trace, average_effort = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, gv)
+        result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, gv)
 
-    # if rejected, no effort is required
+        # appraoch
+        if action_type == 'approach':
+            if result == 'success':
+                points = trial_outcome
+                # light fire under spaceship and show "success"
+            elif result == 'failure':
+                points = -1 # MAJA
+                # show "failure"
+
+        # avoid
+        elif action_type == 'avoid':
+            if result == 'success':
+                points = 0
+                # light fire under spaceship and show "success"
+            elif result == 'failure':
+                points = -101  # MAJA
+                # show "failure"
+
+    # reject
     elif clicked_button == lower_button:
         response = 'reject'
+        result, effort_trace, average_effort, effort_time = None, None, None, None
+
+        # approach
+        if action_type == 'approach':
+            points = 0
+
+        # avoid
+        elif action_type == 'avoid':
+            points = trial_outcome
+
 
 
     # save trial data
     info['trial_count'] += 1
+    info['block_action_type'] = action_type
+    info['block_global_effort_state'] = effort_state
+    info['block_attention_focus'] = attention_focus
+    info['trial_effort'] = trial_effort
+    info['trial_outcome'] = trial_outcome
     info['response'] = response
     info['response_time'] = response_time
-    # ADD ALL OTHERS HERE - MAJA
-    # info['effort_trace'] = '"' + json.dumps(effort_trace) + '"'
-    # info['effort_expended'] = average_effort
-    # info['effort_response_time'] = None
-    # info['result'] = result
-    # info['points'] = points
-    # info['cumulative_points'] = int(info['cumulative_points']) + points if info['cumulative_points'] is not None else points
+    info['result'] = result
+    info['effort_trace'] = '"' + json.dumps(effort_trace) + '"'
+    info['effort_expended'] = average_effort
+    info['effort_response_time'] = effort_time
+    info['points'] = points
+    info['cumulative_points'] = int(info['cumulative_points']) + points if info['cumulative_points'] is not None else points
     datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
     datafile.flush()
 

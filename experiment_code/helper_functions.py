@@ -275,5 +275,6 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, gv):
             temp_effort_trace.clear()  # clear temporary efforts since condition was not met
 
     result = "success" if success else "failure"
-    return result, effort_trace, average_effort  # return outcome, the complete effort trace, and the average of successful efforts
+    effort_time = trial_start_time.getTime()
+    return result, effort_trace, average_effort, effort_time  # return outcome, the complete effort trace, the average of successful efforts, and the time taken to complete the trial
 

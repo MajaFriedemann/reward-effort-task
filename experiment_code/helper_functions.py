@@ -63,11 +63,11 @@ def check_button(win, buttons, stimuli, mouse):
         draw_all_stimuli(win, stimuli)  # redraw stimuli and check again
 
 
-def convert_rgb_to_psychopy(rgb):
+def convert_rgb_to_psychopy(color, alpha=1.0):
     """
-    turn rgp colour code to colour format that PsychoPy needs
+    Convert RGB values to a range suitable for PsychoPy (-1 to 1) and include alpha for transparency.
     """
-    return tuple([(x / 127.5) - 1 for x in rgb])
+    return [(c / 127.5) - 1 for c in color] + [alpha]
 
 
 def sample_strength(dummy, mouse, gripper, zero_baseline):
@@ -83,7 +83,23 @@ def sample_strength(dummy, mouse, gripper, zero_baseline):
     return strength
 
 
-# Function to draw a star
+def generate_random_positions(num_stars, x_range, y_range, min_distance):
+    """
+    Generate random, non-overlapping positions for stars within a given x and y range
+    """
+    positions = []
+    for _ in range(num_stars):
+        while True:
+            pos = (
+                np.random.uniform(x_range[0], x_range[1]),
+                np.random.uniform(y_range[0], y_range[1])
+            )
+            if all(np.linalg.norm(np.array(pos) - np.array(existing_pos)) >= min_distance for existing_pos in positions):
+                positions.append(pos)
+                break
+    return positions
+
+
 def draw_star(win, pos, size=30, color=None):
     """
     Draw a star at a given position with a given size and color
@@ -107,92 +123,106 @@ def draw_star(win, pos, size=30, color=None):
     return star
 
 
-def perturb_positions(positions, max_perturbation):
-    perturbed_positions = []
-    for pos in positions:
-        perturbed_pos = (pos[0] + np.random.uniform(-max_perturbation, max_perturbation),
-                         pos[1] + np.random.uniform(-max_perturbation, max_perturbation))
-        perturbed_positions.append(perturbed_pos)
-    return perturbed_positions
+def draw_meteor(win, pos, size=30, color=None):
+    """
+    Draw a meteor at a given position with a given size and color
+    """
+    if color is None:
+        color = [255, 255, 255]  # white
+    # Vertices for a meteor-like shape
+    vertices = [
+        (0, 1), (0.3, 0.8), (0.7, 0.7), (1, 0.2),
+        (0.8, 0), (0.5, -0.2), (0.3, -0.5), (0, -0.8),
+        (-0.3, -0.5), (-0.5, -0.2), (-0.8, 0), (-1, 0.2),
+        (-0.7, 0.7), (-0.3, 0.8)
+    ]
+    vertices = [(x * size, y * size) for x, y in vertices]
+    meteor = visual.ShapeStim(
+        win=win,
+        vertices=vertices,
+        fillColor=convert_rgb_to_psychopy(color),
+        lineColor=convert_rgb_to_psychopy(color),
+        pos=pos
+    )
+    return meteor
 
 
-def trial_stimuli(win, gv):
+def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     """
     Draw outcome and effort stimuli for the trial offer
     """
-    stimulus_elements = []
+    trial_stimuli = []
+
     # SPACESHIP
     spaceship = visual.ImageStim(
         win,
         image='pictures/spaceship.png',
-        pos=(-2, -23),
+        pos=(-2, -50),
         size=(340, 300)
     )
+
     # EFFORT BAR
     outline = visual.Rect(
         win,
-        width=gv['effort_bar_width'],
-        height=gv['effort_bar_height'],
-        pos=(0, 0),
+        width=gv['effort_bar_width']+6,
+        height=gv['effort_bar_height']+6,
+        pos=(0, -36),
         fillColor='black',
-        lineColor='darkblue',
-        lineWidth=4
     )
-    # TARGET LINE
-    target_y_pos = 0 - (gv['effort_bar_height']/ 2) + (gv['effort_level'] / 100) * gv['effort_bar_height']
-    target_line = visual.Line(
+
+    # EFFORT TARGET
+    target_height = gv['effort_bar_height'] * trial_effort / 100
+    target = visual.Rect(
         win,
-        start=(-gv['effort_bar_width'] / 2, target_y_pos),
-        end=(gv['effort_bar_width']/ 2, target_y_pos),
-        lineColor="orangered",
-        lineWidth=4
+        width=gv['effort_bar_width'],
+        height=target_height,
+        pos=(0, -36 - (gv['effort_bar_height'] - target_height) / 2),
+        fillColor=convert_rgb_to_psychopy([250, 243, 62]),
     )
+
     # EFFORT TEXT
     effort_text = visual.TextStim(
         win,
-        text=f'EFFORT: {gv["effort_level"]}%',
+        text=f'EFFORT: {trial_effort}%',
         height=24,
-        pos=(180, 60),
+        pos=(180, -20),
         color='white',
         bold=True,
         font='Monospace',
         alignHoriz='center'
     )
-    # STARS
-    predefined_positions = {
-        1: [(0, 350)],
-        2: [(-100, 320), (100, 300)],
-        3: [(-100, 310), (100, 300), (0, 270)],
-        4: [(-100, 340), (100, 320), (-100, 270), (100, 280)],
-        5: [(-100, 340), (100, 310), (0, 290), (-100, 270), (100, 230)],
-        6: [(-120, 350), (-40, 340), (40, 330), (120, 310), (-60, 270), (60, 280)],
-        7: [(-120, 320), (-40, 330), (40, 320), (120, 310), (-80, 240), (0, 290), (80, 250)],
-        8: [(-120, 330), (-40, 320), (40, 310), (120, 300), (-80, 260), (0, 280), (80, 250), (0, 270)],
-        9: [(-120, 310), (-40, 330), (40, 320), (120, 300), (-80, 250), (0, 260), (80, 250), (-60, 210), (60, 220)],
-        10: [(-120, 320), (-40, 300), (40, 340), (120, 340), (-80, 260), (0, 280), (80, 260), (-80, 210), (0, 240), (80, 220)],
-        11: [(-120, 340), (-40, 320), (40, 310), (120, 300), (-80, 260), (0, 250), (80, 240), (-100, 240), (-20, 210), (60, 200), (100, 220)]
-    }
 
-    num_stars = 10
-    num_stars = max(1, min(num_stars, 11))
-    positions = predefined_positions[num_stars]
-    positions = perturb_positions(positions, max_perturbation=5)
-    for pos in positions:
-        star = draw_star(win, pos, size=30, color=[227, 240, 155])
-        stimulus_elements.append(star)
+    # STARS/METEORS
+    x_range = (-250, 250)  # x-coordinate range for stars/meteors
+    y_range = (150, 460)  # y-coordinate range for stars/meteors
+    min_distance = 24  # Minimum distance between stars/meteors to avoid overlap
+    positions = generate_random_positions(abs(trial_outcome), x_range, y_range, min_distance)
 
-    stimulus_elements.extend([spaceship, outline, target_line, effort_text])
-    return stimulus_elements
+    # APPROACH BLOCK - STARS
+    if action_type == 'approach':
+        for pos in positions:
+            star = draw_star(win, pos, size=10, color=[249, 244, 245])
+            trial_stimuli.append(star)
+
+    # AVOID BLOCK - METEORS
+    elif action_type == 'avoid':
+        spaceship.ori = 180  # rotate the spaceship to face away from the meteors
+        spaceship.pos = (0, -18)  # reposition the spaceship to accommodate the rotation
+        for pos in positions:
+            meteor = draw_meteor(win, pos, size=10, color=[249, 244, 245])
+            trial_stimuli.append(meteor)
+
+    trial_stimuli.extend([spaceship, outline, target, effort_text])
+    return trial_stimuli
 
 
-def sample_effort(win, dummy, mouse, gripper, stimuli, gv):
+def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, gv):
     """
     Sample effort from gripper or mouse, zero_baseline and max_strength corrected.
     Effort needs to exceed a defined level for one consecutive second to be successful.
     If success is not achieved within a set time window, the trial is considered a failure.
     Outputs success/failure, the complete effort trace, and the average effort expended during the successful time window.
     """
-    effort_expended = 0
     effort_trace = []
     average_effort = 0
     temp_effort_trace = []  # Temporary list to track efforts during success duration
@@ -202,25 +232,25 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, gv):
     trial_start_time = core.Clock()  # Initialize a clock to measure total trial time
     dynamic_bar = visual.Rect(
         win,
-        width=gv['effort_bar_width']-6,
+        width=gv['effort_bar_width'],
         height=0,  # Start with a height of 0
-        pos=(0, -70),  # Position at the bottom of the outline
-        fillColor='lightsalmon'
+        pos=(0, -106),  # Position at the bottom of the outline
+        fillColor=convert_rgb_to_psychopy([239, 121, 138], alpha=0.7)
     )
-    target_y_pos = 0 - (gv['effort_bar_height'] / 2) + (gv['effort_level'] / 100) * gv['effort_bar_height']
-    target_line = visual.Line(
+    target_height = gv['effort_bar_height'] * trial_effort / 100
+    target = visual.Rect(
         win,
-        start=(-gv['effort_bar_width'] / 2, target_y_pos),
-        end=(gv['effort_bar_width'] / 2, target_y_pos),
-        lineColor="orangered",
-        lineWidth=4
+        width=gv['effort_bar_width'],
+        height=target_height,
+        pos=(0, -36 - (gv['effort_bar_height'] - target_height) / 2),
+        fillColor=convert_rgb_to_psychopy([250, 243, 62]),
     )
+    stimuli.append(target)
     stimuli.append(dynamic_bar)
-    stimuli.append(target_line)
 
     while not success and not trial_failed:
-        if trial_start_time.getTime() > 20:  # Check if max time allowed has passed MAJA
-            break  # Exit the loop if the trial is considered a failure
+        if trial_start_time.getTime() > gv['time_limit']:  # check if max time allowed has passed
+            break  # exit the loop if the trial is considered a failure
 
         if dummy:
             effort_expended = mouse.getPos()[1]  # vertical movement
@@ -229,23 +259,21 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, gv):
         effort_trace.append(effort_expended)
         dynamic_height = min(max(0, effort_expended), 100) * (138 / 100)
         dynamic_bar.height = dynamic_height
-        dynamic_bar.pos = (0, -70 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
+        dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
         draw_all_stimuli(win, stimuli)
-
-        # Track effort for potential success duration
-        if effort_expended > gv['effort_level']:
+        if effort_expended > trial_effort:
             if success_time is None:
-                success_time = trial_start_time.getTime()  # Mark the time when effort first exceeds target
-                temp_effort_trace = [effort_expended]  # Start tracking from this point
+                success_time = trial_start_time.getTime()  # mark the time when effort first exceeds target
+                temp_effort_trace = [effort_expended]  # start tracking from this point
             else:
-                temp_effort_trace.append(effort_expended)  # Continue tracking
-            if trial_start_time.getTime() - success_time >= 10.0:  # Check if it's been over a second MAJA
+                temp_effort_trace.append(effort_expended)  # continue tracking
+            if trial_start_time.getTime() - success_time >= gv['effort_duration']:  # check if it's been over a second
                 success = True
                 average_effort = sum(temp_effort_trace) / len(temp_effort_trace) if temp_effort_trace else 0
         else:
-            success_time = None  # Reset if effort drops below target
-            temp_effort_trace.clear()  # Clear temporary efforts since condition was not met
+            success_time = None  # reset if effort drops below target
+            temp_effort_trace.clear()  # clear temporary efforts since condition was not met
 
     result = "success" if success else "failure"
-    return result, effort_trace, average_effort  # Return outcome, the complete effort trace, and the average of successful efforts
+    return result, effort_trace, average_effort  # return outcome, the complete effort trace, and the average of successful efforts
 

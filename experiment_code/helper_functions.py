@@ -277,8 +277,8 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     points_text = visual.TextStim(
         win,
         text='',
-        height=60,
-        pos=(0, 300),
+        height=50,
+        pos=(0, 280),
         color='white',
         bold=True,
         font='Monospace',
@@ -304,7 +304,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
                 stimuli.append(outcome)
             draw_all_stimuli(win, stimuli)
     elif action_type == 'avoid':
-        points_text.text = 'LOSS AVOIDED!'
+        points_text.text = f'{points} POINTS!'
         flame.ori = 180  # rotate the flame
         for frame in range(frames):
             # Move spaceship downwards (avoid block success)
@@ -322,48 +322,57 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     core.wait(3)  # Hold the final frame for a few seconds
 
 
-def animate_reject(win, spaceship, outline, target, outcomes, action_type):
+def animate_reject(win, spaceship, outline, target, outcomes, points, action_type):
     """
     Animate the rejection outcome for approach blocks, where stars dim or fade away.
     """
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text='0 POINTS!',
-        height=60,
-        pos=(0, 300),
+        text='',
+        height=50,
+        pos=(0, 280),
         color='white',
         bold=True,
         font='Monospace',
         alignHoriz='center'
     )
-
     if action_type == 'approach':
+        points_text.text = f'{points} POINTS!'
         for frame in range(frames):
             for outcome in outcomes:
                 outcome.opacity = 1 - (frame / frames)  # Gradually reduce opacity to create a dimming effect
             stimuli = [spaceship, outline, target, outcomes]
             draw_all_stimuli(win, stimuli, 0.03)  # Wait a short time between frames for a smooth animation
-
         # Final frame to ensure complete fade out
         for outcome in outcomes:
             outcome.opacity = 0
         stimuli = [spaceship, outline, target, outcomes, points_text]
         draw_all_stimuli(win, stimuli, 3)
 
-
     elif action_type == 'avoid':
+        points_text.text = f'{points} POINTS!'
         for frame in range(frames):
+            opacity_factor = 1 - (frame / frames)  # Calculate opacity reduction for each frame
             for outcome in outcomes:
                 outcome.pos = (
                     outcome.pos[0],
                     outcome.pos[1] - (frame / frames) * 50  # Move meteors down towards the spaceship
                 )
-            draw_all_stimuli(win, [spaceship] + outcomes)
-            core.wait(0.05)  # Wait a short time between frames for a smooth animation
-
-        # Final frame to show meteors close to the spaceship
+                outcome.opacity = opacity_factor  # Gradually reduce opacity of meteors
+            spaceship.opacity = opacity_factor  # Gradually reduce opacity of spaceship
+            outline.opacity = opacity_factor  # Gradually reduce opacity of outline
+            target.opacity = opacity_factor  # Gradually reduce opacity of target
+            stimuli = [spaceship, outline, target] + outcomes
+            draw_all_stimuli(win, stimuli, 0.05)  # Wait a short time between frames for a smooth animation
+        # Final frame to ensure complete fade out
         for outcome in outcomes:
             outcome.pos = (outcome.pos[0], spaceship.pos[1] + 20)
+            outcome.opacity = 0
+        spaceship.opacity = 0
+        outline.opacity = 0
+        target.opacity = 0
         stimuli = [spaceship, outline, target, outcomes, points_text]
         draw_all_stimuli(win, stimuli, 3)
+
+

@@ -227,7 +227,7 @@ while info['trial_count'] < gv['num_trials']:
     trial_effort = gv['effort'][info['trial_count']]
     trial_outcome = gv['outcome'][info['trial_count']]
     action_type = gv['action_type'][info['trial_count']]
-    action_type = 'avoid'
+    action_type = 'approach'
     effort_state = gv['effort_state'][info['trial_count']]
     attention_focus = gv['attention_focus'][info['trial_count']]
 
@@ -255,6 +255,7 @@ while info['trial_count'] < gv['num_trials']:
                 points = trial_outcome
             elif action_type == 'avoid':
                 points = 0
+            # MAJA ANIMATE FAILURE
 
     # reject
     elif clicked_button == lower_button:
@@ -264,7 +265,7 @@ while info['trial_count'] < gv['num_trials']:
             points = 0
         elif action_type == 'avoid':
             points = trial_outcome
-        hf.animate_reject(win, spaceship, outline, target, outcomes, action_type)
+        hf.animate_reject(win, spaceship, outline, target, outcomes, points, action_type)
 
 
     # save trial data

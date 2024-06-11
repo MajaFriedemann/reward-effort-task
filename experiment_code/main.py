@@ -219,58 +219,52 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
 win.flip()
 while info['trial_count'] < gv['num_trials']:
+    # between trial wait
+    win.flip()
+    core.wait(1)
+
     # trial info
     trial_effort = gv['effort'][info['trial_count']]
     trial_outcome = gv['outcome'][info['trial_count']]
     action_type = gv['action_type'][info['trial_count']]
-    action_type = 'approach'
-
+    action_type = 'avoid'
     effort_state = gv['effort_state'][info['trial_count']]
     attention_focus = gv['attention_focus'][info['trial_count']]
 
     # draw stimuli
-    trial_stimuli = hf.draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv)
-    stimuli = [trial_stimuli, upper_button, upper_button_txt, lower_button, lower_button_txt]
+    spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv)
+    stimuli = [spaceship, outline, target, effort_text, outcomes, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
     clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
 
     # accept
     if clicked_button == upper_button:
         response = 'accept'
-        stimuli = [trial_stimuli]
-        result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, gv)
-
-        # appraoch
-        if action_type == 'approach':
-            if result == 'success':
+        stimuli = [spaceship, outline, target, effort_text, outcomes]
+        result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, target, gv)
+        # success
+        if result == 'success':
+            if action_type == 'approach':
                 points = trial_outcome
-                # light fire under spaceship and show "success"
-            elif result == 'failure':
-                points = -1 # MAJA
-                # show "failure"
-
-        # avoid
-        elif action_type == 'avoid':
-            if result == 'success':
+            elif action_type == 'avoid':
                 points = 0
-                # light fire under spaceship and show "success"
-            elif result == 'failure':
-                points = -101  # MAJA
-                # show "failure"
+            hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type)
+        # failure
+        elif result == 'failure':
+            if action_type == 'approach':
+                points = trial_outcome
+            elif action_type == 'avoid':
+                points = 0
 
     # reject
     elif clicked_button == lower_button:
         response = 'reject'
         result, effort_trace, average_effort, effort_time = None, None, None, None
-
-        # approach
         if action_type == 'approach':
             points = 0
-
-        # avoid
         elif action_type == 'avoid':
             points = trial_outcome
-
+        hf.animate_reject(win, spaceship, outline, target, outcomes, action_type)
 
 
     # save trial data

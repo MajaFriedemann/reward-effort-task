@@ -1,0 +1,2 @@
+expName,curec_ID,session_nr,date,end_date,participant,age,gender,max_strength,block_count,trial_count,block_action_type,block_global_effort_state,block_attention_focus,trial_effort,trial_outcome,response,response_time,result,points,cumulative_points,effort_trace,effort_expended,effort_response_time
+reward-effort-pgACC-TUS,R88533/RE002,1,2024-06-11_15h09.56.697,None,999,,,2.686106363932292,0,1,approach,true,outome,85,100,reject,0.6713233339978615,None,0,0,"null",None,None

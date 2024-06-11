@@ -151,8 +151,6 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     """
     Draw outcome and effort stimuli for the trial offer
     """
-    trial_stimuli = []
-
     # SPACESHIP
     spaceship = visual.ImageStim(
         win,
@@ -199,10 +197,11 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     positions = generate_random_positions(abs(trial_outcome), x_range, y_range, min_distance)
 
     # APPROACH BLOCK - STARS
+    outcomes = []
     if action_type == 'approach':
         for pos in positions:
             star = draw_star(win, pos, size=10, color=[249, 244, 245])
-            trial_stimuli.append(star)
+            outcomes.append(star)
 
     # AVOID BLOCK - METEORS
     elif action_type == 'avoid':
@@ -210,13 +209,12 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         spaceship.pos = (0, -18)  # reposition the spaceship to accommodate the rotation
         for pos in positions:
             meteor = draw_meteor(win, pos, size=10, color=[249, 244, 245])
-            trial_stimuli.append(meteor)
+            outcomes.append(meteor)
 
-    trial_stimuli.extend([spaceship, outline, target, effort_text])
-    return trial_stimuli
+    return spaceship, outline, target, effort_text, outcomes
 
 
-def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, gv):
+def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv):
     """
     Sample effort from gripper or mouse, zero_baseline and max_strength corrected.
     Effort needs to exceed a defined level for one consecutive second to be successful.
@@ -235,15 +233,7 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, gv):
         width=gv['effort_bar_width'],
         height=0,  # Start with a height of 0
         pos=(0, -106),  # Position at the bottom of the outline
-        fillColor=convert_rgb_to_psychopy([239, 121, 138], alpha=0.7)
-    )
-    target_height = gv['effort_bar_height'] * trial_effort / 100
-    target = visual.Rect(
-        win,
-        width=gv['effort_bar_width'],
-        height=target_height,
-        pos=(0, -36 - (gv['effort_bar_height'] - target_height) / 2),
-        fillColor=convert_rgb_to_psychopy([250, 243, 62]),
+        fillColor=convert_rgb_to_psychopy([243, 88, 19], alpha=0.7)
     )
     stimuli.append(target)
     stimuli.append(dynamic_bar)
@@ -278,3 +268,102 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, gv):
     effort_time = trial_start_time.getTime()
     return result, effort_trace, average_effort, effort_time  # return outcome, the complete effort trace, the average of successful efforts, and the time taken to complete the trial
 
+
+def animate_success(win, spaceship, outcomes, target, outline, points, action_type):
+    """
+    Animate the success outcome for either approach or avoid blocks, including displaying points.
+    """
+    frames = 30  # Number of frames for the animation
+    points_text = visual.TextStim(
+        win,
+        text='',
+        height=60,
+        pos=(0, 300),
+        color='white',
+        bold=True,
+        font='Monospace',
+        alignHoriz='center'
+    )
+    flame = visual.ImageStim(
+        win,
+        image='pictures/flame.png',  # Ensure you have a flame image
+        pos=(spaceship.pos[0], spaceship.pos[1]),
+        size=(200, 200)
+    )
+    target.fillColor = convert_rgb_to_psychopy([243, 133, 19], alpha=0.95)
+    if action_type == 'approach':
+        points_text.text = f'+{points} POINTS!'
+        for frame in range(frames):
+            # Move spaceship upwards
+            spaceship.pos += (0, 5)
+            outline.pos += (0, 5)
+            target.pos += (0, 5)
+            flame.pos = (spaceship.pos[0], spaceship.pos[1] - 170)
+            stimuli = [spaceship, outline, target, flame]
+            for outcome in outcomes:
+                stimuli.append(outcome)
+            draw_all_stimuli(win, stimuli)
+    elif action_type == 'avoid':
+        points_text.text = 'LOSS AVOIDED!'
+        flame.ori = 180  # rotate the flame
+        for frame in range(frames):
+            # Move spaceship downwards (avoid block success)
+            spaceship.pos += (0, -5)
+            outline.pos += (0, -5)
+            target.pos += (0, -5)
+            flame.pos = (spaceship.pos[0], spaceship.pos[1] + 170)
+            stimuli = [spaceship, outline, target, flame]
+            for outcome in outcomes:
+                stimuli.append(outcome)
+            draw_all_stimuli(win, stimuli)
+    # Draw the final frame with the points text
+    stimuli = [spaceship, outline, target, flame, points_text]
+    draw_all_stimuli(win, stimuli)
+    core.wait(3)  # Hold the final frame for a few seconds
+
+
+def animate_reject(win, spaceship, outline, target, outcomes, action_type):
+    """
+    Animate the rejection outcome for approach blocks, where stars dim or fade away.
+    """
+    frames = 30  # Number of frames for the animation
+    points_text = visual.TextStim(
+        win,
+        text='0 POINTS!',
+        height=60,
+        pos=(0, 300),
+        color='white',
+        bold=True,
+        font='Monospace',
+        alignHoriz='center'
+    )
+
+    if action_type == 'approach':
+        for frame in range(frames):
+            for outcome in outcomes:
+                outcome.opacity = 1 - (frame / frames)  # Gradually reduce opacity to create a dimming effect
+            stimuli = [spaceship, outline, target, outcomes]
+            draw_all_stimuli(win, stimuli, 0.03)  # Wait a short time between frames for a smooth animation
+
+        # Final frame to ensure complete fade out
+        for outcome in outcomes:
+            outcome.opacity = 0
+        stimuli = [spaceship, outline, target, outcomes, points_text]
+        draw_all_stimuli(win, stimuli, 3)
+
+
+    elif action_type == 'avoid':
+        for frame in range(frames):
+            for outcome in outcomes:
+                outcome.pos = (
+                    outcome.pos[0],
+                    outcome.pos[1] - (frame / frames) * 50  # Move meteors down towards the spaceship
+                )
+            draw_all_stimuli(win, [spaceship] + outcomes)
+            core.wait(0.05)  # Wait a short time between frames for a smooth animation
+
+        # Final frame to show meteors close to the spaceship
+        for outcome in outcomes:
+            outcome.pos = (outcome.pos[0], spaceship.pos[1] + 20)
+        stimuli = [spaceship, outline, target, outcomes, points_text]
+        draw_all_stimuli(win, stimuli, 3)

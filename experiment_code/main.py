@@ -209,7 +209,11 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 
 # # INSTRUCTIONS
 # instructions_txt.text = ("Great! Calibration is done. \n\n"
-#                          "TASK INSTRUCTIONS")
+#                          "In this task, you will control a spaceship. Your goal is to fill it with fuel by exerting effort using a handgripper.\n\n"
+#                          "There are two types of blocks:\n\n"
+#                          "1. Approach Blocks: There will be a cloud of stars. The number of stars indicates the reward you can earn. If you accept the offer, you need to exert the required effort to get the reward. If you reject, you get no reward. If you fail to exert the required effort after accepting, you will lose points.\n\n"
+#                          "2. Avoid Blocks: There will be a cloud of meteors. The number of meteors indicates the loss you can incur. If you accept the offer, you need to exert the required effort to avoid the loss. If you reject, you incur the loss. If you fail to exert the required effort after accepting, you will incur an even bigger loss.\n\n"
+#                          "Click 'NEXT' to start the task.")
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli, 1)
 # hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
@@ -218,6 +222,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 # TASK TRIALS
 win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
 win.flip()
+previous_action_type = 'initial'  # initial action type to get block pause screen before first block too
 while info['trial_count'] < gv['num_trials']:
     # between trial wait
     win.flip()
@@ -227,9 +232,24 @@ while info['trial_count'] < gv['num_trials']:
     trial_effort = gv['effort'][info['trial_count']]
     trial_outcome = gv['outcome'][info['trial_count']]
     action_type = gv['action_type'][info['trial_count']]
-    action_type = 'approach'
     effort_state = gv['effort_state'][info['trial_count']]
     attention_focus = gv['attention_focus'][info['trial_count']]
+
+    # MAJA - JUST FOR TESTING!!! changes block type every 3 trials
+    if (info['trial_count'] // 3) % 2 == 0:
+        action_type = 'approach'
+    else:
+        action_type = 'avoid'
+        trial_outcome = -abs(gv['outcome'][info['trial_count']])
+
+    # check for action type change
+    if action_type != previous_action_type:
+        instructions_txt.text = f"The next block of trials will be {action_type}. \n\nYou may take a break."
+        stimuli = [instructions_txt, green_button, button_txt]
+        hf.draw_all_stimuli(win, stimuli)
+        hf.check_button(win, [green_button], stimuli, mouse)
+        previous_action_type = action_type
+
 
     # draw stimuli
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv)
@@ -252,10 +272,10 @@ while info['trial_count'] < gv['num_trials']:
         # failure
         elif result == 'failure':
             if action_type == 'approach':
-                points = trial_outcome
+                points = -10  # MAJA - how many points should be lost?
             elif action_type == 'avoid':
-                points = 0
-            # MAJA ANIMATE FAILURE
+                points = -120  # MAJA - how many points should be lost?
+            hf.animate_failure(win, spaceship, outline, target, outcomes, points, action_type)
 
     # reject
     elif clicked_button == lower_button:

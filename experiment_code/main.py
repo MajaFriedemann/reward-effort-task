@@ -29,11 +29,12 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'dummy (y/n)': 'y',
-           'EEG (y/n)': 'n',
+           'trial schedule': 'A',  # schedule A or B
+           'grippers (y/n)': 'n', # if y, use real grippers, if n, use mouse movement
+           'eeg (y/n)': 'n',  # if y, send EEG triggers
            'session nr': '1',
-           'age': '',
-           'gender (f/m/o)': '',
+           'age': '28',
+           'gender (f/m/o)': 'f',
            }
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
 if not dlg.OK:
@@ -74,7 +75,14 @@ gv = dict(
 )
 
 # READ TRIAL SCHEDULE
-trial_schedule_filepath = 'trial_schedule.csv'
+if expInfo['trial schedule'] == 'A':
+    trial_schedule_filepath = 'trial_schedule_A.csv'
+elif expInfo['trial schedule'] == 'B':
+    trial_schedule_filepath = 'trial_schedule_B.csv'
+else:
+    trial_schedule_filepath = None
+    print('Error: Choose a valid trial schedule file.')
+    core.quit()
 if os.path.exists(trial_schedule_filepath):
     max_trial_number = 0
     with open(trial_schedule_filepath, 'r') as csvfile:
@@ -99,6 +107,7 @@ else:
 info = dict(
     expName=expName,
     curec_ID=curecID,
+    trial_schedule = expInfo['trial schedule'],
     session_nr=expInfo['session nr'],
     date=data.getDateStr(),
     end_date=None,
@@ -137,14 +146,14 @@ datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
 
 
-###################################
+#####################################
 # SET UP WINDOW, MOUSE, HAND GRIPPER
-###################################
+#####################################
 # WINDOW
 win = visual.Window(
         size=[1512, 982],  # set to actual screen size
         fullscr=True,  # fullscreen mode
-        screen=1,
+        screen=0,
         allowGUI=False,
         color='black',
         blendMode='avg',
@@ -153,11 +162,11 @@ win = visual.Window(
     )
 
 # MOUSE
-mouse = event.Mouse()
+mouse = event.Mouse(visible=True, win=win)
 win.mouseVisible = True
 
 # HAND GRIPPER
-DUMMY = expInfo['dummy (y/n)'].lower() == 'y'
+DUMMY = expInfo['grippers (y/n)'].lower() == 'n'
 gripper = None
 if not DUMMY:
     from mpydev import BioPac
@@ -168,63 +177,83 @@ if not DUMMY:
 ###################################
 # CREATE STIMULI
 ###################################
-green_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -270), fillColor='green')
+green_button = visual.Rect(win=win, units="pix", width=160, height=80, pos=(0, -270), fillColor='green')
 button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.pos, color='black', bold=True,font='Monospace')
-big_txt = visual.TextStim(win=win, text='Welcome!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
+big_txt = visual.TextStim(win=win, text='Welcome!', height=70, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 300], wrapWidth=1200, color='white', font='Monospace')
 left_side_txt = visual.TextStim(win=win, text='Points', height=70, pos=(-300, 60), color='white', bold=True,font='Monospace')
-upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -240), fillColor='white')
+upper_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -250), fillColor='white')
 upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_button.pos, color='black', bold=True,font='Monospace')
-lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -320), fillColor='white')
+lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -330), fillColor='white')
 lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_button.pos, color='black', bold=True,font='Monospace')
+
+
+###################################
+# INSTRUCTIONS
+###################################
+# Welcome
+big_txt.text = "Welcome to the experiment! Thank you for participating.\n\nClick 'NEXT' to begin."
+stimuli = [green_button, button_txt, big_txt]
+hf.draw_all_stimuli(win, stimuli)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+
+# Calibrate hand gripper
+instructions_txt.text = ("First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
+                         "Click the 'NEXT' button to begin the calibration process.")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+
+# CALIBRATE HAND GRIPPER ZERO BASELINE
+win.flip()
+instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
+hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+for countdown in range(3, 0, -1):
+    big_txt.text = str(countdown)
+    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
+    if not DUMMY and countdown == 3:
+        gv['gripper_zero_baseline'] = gripper.sample()[0] # on 1, sample the gripper 0 baseline
+
+# Task overview
+instructions_txt.text = ("Great! Calibration is done.\n\n"
+                         "In this task, you will control a spaceship. Your goal is to fill it with fuel by exerting effort using a handgripper.\n\n"
+                         "Click 'NEXT' to learn more about the task.")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli, 1)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+
+# Block types
+instructions_txt.text = ("There are two types of blocks:\n\n"
+                         "1. Approach Blocks: There will be a cloud of stars. The number of stars indicates the reward you can earn. If you "
+                         "accept the offer, you need to exert the required effort to get the reward. If you reject, you get no reward. "
+                         "If you fail to exert the required effort after accepting, you will lose points.\n\n"
+                         "2. Avoid Blocks: There will be a cloud of meteors. The number of meteors indicates the loss you can incur. "
+                         "If you accept the offer, you need to exert the required effort to avoid the loss. If you reject, you incur the loss. "
+                         "If you fail to exert the required effort after accepting, you will incur an even bigger loss.\n\n"
+                         "Click 'NEXT' to see examples.")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli, 1)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+
+# Visual example
+instructions_txt.text = ("Here are examples of what you will see:\n\n"
+                         "In Approach Blocks, you will see a cloud of stars indicating potential rewards.\n\n"
+                         "In Avoid Blocks, you will see a cloud of meteors indicating potential losses.\n\n"
+                         "Click 'NEXT' to start the task.")
+stimuli = [green_button, button_txt, instructions_txt]
+hf.draw_all_stimuli(win, stimuli, 1)
+hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 ###################################
 # TASK
 ###################################
-# # WELCOME
-# stimuli = [green_button, button_txt, big_txt]
-# hf.draw_all_stimuli(win, stimuli)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-#
-
-# # INSTRUCTIONS
-# instructions_txt.text = ("First up, we need to calibrate the equipment. So please do not touch the hand gripper yet. \n\n"
-#                          "Click the 'NEXT' button to begin the calibration process.")
-# stimuli = [green_button, button_txt, instructions_txt]
-# hf.draw_all_stimuli(win, stimuli)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-#
-
-# # CALIBRATE HAND GRIPPER ZERO BASELINE
-# instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
-# hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-# for countdown in range(3, 0, -1):
-#     big_txt.text = str(countdown)
-#     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
-#     if not DUMMY and countdown == 3:
-#         gv['gripper_zero_baseline'] = gripper.sample()[0] # on 1, sample the gripper 0 baseline
-#
-
-# # INSTRUCTIONS
-# instructions_txt.text = ("Great! Calibration is done. \n\n"
-#                          "In this task, you will control a spaceship. Your goal is to fill it with fuel by exerting effort using a handgripper.\n\n"
-#                          "There are two types of blocks:\n\n"
-#                          "1. Approach Blocks: There will be a cloud of stars. The number of stars indicates the reward you can earn. If you accept the offer, you need to exert the required effort to get the reward. If you reject, you get no reward. If you fail to exert the required effort after accepting, you will lose points.\n\n"
-#                          "2. Avoid Blocks: There will be a cloud of meteors. The number of meteors indicates the loss you can incur. If you accept the offer, you need to exert the required effort to avoid the loss. If you reject, you incur the loss. If you fail to exert the required effort after accepting, you will incur an even bigger loss.\n\n"
-#                          "Click 'NEXT' to start the task.")
-# stimuli = [green_button, button_txt, instructions_txt]
-# hf.draw_all_stimuli(win, stimuli, 1)
-# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-
-
-# TASK TRIALS
-win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
+previous_action_type = None  # Initialize to None to avoid comparison on the first trial
 win.flip()
-previous_action_type = 'initial'  # initial action type to get block pause screen before first block too
 while info['trial_count'] < gv['num_trials']:
-    # between trial wait
+    # Set window color to blue at the start of each trial
+    win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
     win.flip()
     core.wait(1)
 
@@ -242,14 +271,14 @@ while info['trial_count'] < gv['num_trials']:
         action_type = 'avoid'
         trial_outcome = -abs(gv['outcome'][info['trial_count']])
 
-    # check for action type change
-    if action_type != previous_action_type:
-        instructions_txt.text = f"The next block of trials will be {action_type}. \n\nYou may take a break."
+    # Check for action type change, skip comparison on the first trial
+    if previous_action_type is not None and action_type != previous_action_type:
+        win.color = 'black'  # Set window color to black before instructions
+        instructions_txt.text = f"The next block of trials will be {action_type}. \n\nClick the NEXT button when you are ready to begin."
         stimuli = [instructions_txt, green_button, button_txt]
         hf.draw_all_stimuli(win, stimuli)
         hf.check_button(win, [green_button], stimuli, mouse)
-        previous_action_type = action_type
-
+    previous_action_type = action_type
 
     # draw stimuli
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv)

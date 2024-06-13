@@ -192,7 +192,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
 
     # STARS/METEORS
     x_range = (-250, 250)  # x-coordinate range for stars/meteors
-    y_range = (150, 460)  # y-coordinate range for stars/meteors
+    y_range = (150, 455)  # y-coordinate range for stars/meteors
     min_distance = 24  # Minimum distance between stars/meteors to avoid overlap
     positions = generate_random_positions(abs(trial_outcome), x_range, y_range, min_distance)
 

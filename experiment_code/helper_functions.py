@@ -11,6 +11,7 @@ import random
 from psychopy import gui, visual, core, data, event, core
 import pandas as pd
 import numpy as np
+import serial
 
 
 ###################################

@@ -216,64 +216,64 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 ###################################
 # INSTRUCTIONS
 ###################################
-# Welcome
-big_txt.text = "Welcome to the experiment!"
-instructions_txt.text = "\n\n\n\n\n\nWhen you are ready to begin, click 'NEXT'."
-stimuli = [green_button, button_txt, big_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli)
-hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-
-# Calibrate hand gripper
-instructions_txt.text = ("First up, we need to calibrate the equipment. \nSo please do not yet touch the hand gripper. \n\n"
-                         "Click 'NEXT' to begin the calibration process.")
-stimuli = [green_button, button_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli)
-hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-
-# CALIBRATE HAND GRIPPER ZERO BASELINE
-win.flip()
-instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
-hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-big_txt.pos = [0, 120]
-for countdown in range(3, 0, -1):
-    big_txt.text = str(countdown)
-    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
-    if not DUMMY and countdown == 1:
-        gv['gripper_zero_baseline'] = gripper.sample()[0] # on 1, sample the gripper 0 baseline
-
-# Task overview
-instructions_txt.text = ("Great! Calibration is done.\n\n"
-                         "In this task, you will control a spaceship. Your goal is to fill it with fuel by exerting effort by using the handgripper.\n\n"
-                         "Click 'NEXT' to learn more about the task.")
-stimuli = [green_button, button_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli, 1)
-hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-
-# Block types
-instructions_txt.text = ("There are two types of blocks:\n\n"
-                         "1. Approach Blocks: There will be a cloud of stars. The number of stars indicates the reward you can earn. If you "
-                         "accept the offer, you need to exert the required effort to get the reward. If you reject or fail to exert the required effort, you get no reward.\n\n"
-                         "2. Avoid Blocks: There will be a cloud of meteors. The number of meteors indicates the loss you can incur. "
-                         "If you accept the offer, you need to exert the required effort to avoid the loss. If you reject or fail to exert the required effort, you incur the loss.\n\n"
-                         "Click 'NEXT' to see examples.")
-stimuli = [green_button, button_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli, 1)
-hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
-
-# Visual example
-instructions_txt.text = ("Here are examples of what you will see:\n\n"
-                         "In Approach Blocks, you will see a cloud of stars indicating potential rewards.\n\n"
-                         "In Avoid Blocks, you will see a cloud of meteors indicating potential losses.\n\n"
-                         "Click 'NEXT' to start the task.")
-stimuli = [green_button, button_txt, instructions_txt]
-hf.draw_all_stimuli(win, stimuli, 1)
-hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# # Welcome
+# big_txt.text = "Welcome to the experiment!"
+# instructions_txt.text = "\n\n\n\n\n\nWhen you are ready to begin, click 'NEXT'."
+# stimuli = [green_button, button_txt, big_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+#
+# # Calibrate hand gripper
+# instructions_txt.text = ("First up, we need to calibrate the equipment. \nSo please do not yet touch the hand gripper. \n\n"
+#                          "Click 'NEXT' to begin the calibration process.")
+# stimuli = [green_button, button_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+#
+# # CALIBRATE HAND GRIPPER ZERO BASELINE
+# win.flip()
+# instructions_top_txt.text = "Calibration in progress. Do not touch the hand gripper."
+# hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+# big_txt.pos = [0, 120]
+# for countdown in range(3, 0, -1):
+#     big_txt.text = str(countdown)
+#     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
+#     if not DUMMY and countdown == 1:
+#         gv['gripper_zero_baseline'] = gripper.sample()[0] # on 1, sample the gripper 0 baseline
+#
+# # Task overview
+# instructions_txt.text = ("Great! Calibration is done.\n\n"
+#                          "In this task, you will control a spaceship. Your goal is to fill it with fuel by exerting effort by using the handgripper.\n\n"
+#                          "Click 'NEXT' to learn more about the task.")
+# stimuli = [green_button, button_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli, 1)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+#
+# # Block types
+# instructions_txt.text = ("There are two types of blocks:\n\n"
+#                          "1. Approach Blocks: There will be a cloud of stars. The number of stars indicates the reward you can earn. If you "
+#                          "accept the offer, you need to exert the required effort to get the reward. If you reject or fail to exert the required effort, you get no reward.\n\n"
+#                          "2. Avoid Blocks: There will be a cloud of meteors. The number of meteors indicates the loss you can incur. "
+#                          "If you accept the offer, you need to exert the required effort to avoid the loss. If you reject or fail to exert the required effort, you incur the loss.\n\n"
+#                          "Click 'NEXT' to see examples.")
+# stimuli = [green_button, button_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli, 1)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+#
+# # Visual example
+# instructions_txt.text = ("Here are examples of what you will see:\n\n"
+#                          "In Approach Blocks, you will see a cloud of stars indicating potential rewards.\n\n"
+#                          "In Avoid Blocks, you will see a cloud of meteors indicating potential losses.\n\n"
+#                          "Click 'NEXT' to start the task.")
+# stimuli = [green_button, button_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli, 1)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 ###################################
 # TASK
 ###################################
-previous_action_type = None  # Initialize to None to avoid comparison on the first trial
+previous_action_type = 'initial'
 win.flip()
 while info['trial_count'] < gv['num_trials']:
     # Set window color to blue at the start of each trial
@@ -291,13 +291,16 @@ while info['trial_count'] < gv['num_trials']:
     # MAJA - JUST FOR TESTING!!! changes block type every 3 trials
     if (info['trial_count'] // 3) % 2 == 0:
         action_type = 'approach'
+        outcome_stimulus = 'stars'
     else:
         action_type = 'avoid'
+        outcome_stimulus = 'meteors'
         trial_outcome = -abs(gv['outcome'][info['trial_count']])
 
     # Check for action type change, skip comparison on the first trial
-    if previous_action_type is not None and action_type != previous_action_type:
-        instructions_txt.text = f"The next block of trials will be {action_type}. \n\nClick 'NEXT' when you are ready to begin."
+    if action_type != previous_action_type:
+        instructions_txt.text = (f"\nIn the next block of trials, \nyou will try to {action_type} {outcome_stimulus}. "
+                                 f"\n\n\n\n\nClick 'NEXT' when you are ready to begin.")
         stimuli = [instructions_txt, green_button, button_txt]
         hf.draw_all_stimuli(win, stimuli)
         hf.check_button(win, [green_button], stimuli, mouse)

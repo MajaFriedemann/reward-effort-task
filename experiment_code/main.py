@@ -30,9 +30,9 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'trial schedule': 'A',  # schedule A or B
+           'trial schedule': 'A_1',  # schedule A or B, 1-8
            'grippers (y/n)': 'n', # if y, use real grippers, if n, use mouse movement
-           'eeg (y/n)': 'n',  # if y, send EEG triggers
+           'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '1',
            'age': '28',
            'gender (f/m/o)': 'f',
@@ -64,11 +64,13 @@ gv = dict(
 
     # trial schedule
     num_trials = None,
-    outcome = [],
+    block_number = [],
+    outcome_level = [],
+    actual_outcome = [],
     effort = [],
     action_type = [],
-    effort_state = [],
     attention_focus = [],
+    effort_state = [],
 
     # visual parameters
     effort_bar_width = 65,
@@ -76,25 +78,21 @@ gv = dict(
 )
 
 # READ TRIAL SCHEDULE
-if expInfo['trial schedule'] == 'A':
-    trial_schedule_filepath = 'trial_schedule_A.csv'
-elif expInfo['trial schedule'] == 'B':
-    trial_schedule_filepath = 'trial_schedule_B.csv'
-else:
-    trial_schedule_filepath = None
-    print('Error: Choose a valid trial schedule file.')
-    core.quit()
+trial_schedule_key = expInfo['trial schedule']
+trial_schedule_filepath = f'../final_trial_schedules/schedule_{trial_schedule_key}.csv'
 if os.path.exists(trial_schedule_filepath):
     max_trial_number = 0
     with open(trial_schedule_filepath, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            gv['outcome'].append(int(row['outcome']))
+            gv['block_number'].append(int(row['block_number']))
+            gv['outcome_level'].append(int(row['outcome_level']))
+            gv['actual_outcome'].append(int(row['actual_outcome']))
             gv['effort'].append(int(row['effort']))
             gv['action_type'].append(row['action_type'])
-            gv['effort_state'].append(row['effort_state'])
             gv['attention_focus'].append(row['attention_focus'])
-            max_trial_number = max(max_trial_number, int(row['trial_number']))
+            gv['effort_state'].append(row['global_effort_state'])
+            max_trial_number = max(max_trial_number, int(row['trial_in_experiment']))
     gv['num_trials'] = max_trial_number
 else:
     print(f"Error: File {trial_schedule_filepath} not found.")
@@ -124,7 +122,8 @@ info = dict(
     block_global_effort_state = None,  # low or high
     block_attention_focus = None,  # reward rate or heart rate
     trial_effort = None,  # effort level required in the trial
-    trial_outcome = None,  # offered reward/loss
+    trial_outcome_level = None,  # offered reward/loss
+    trial_actual_outcome = None,
 
     response=None,  # accept or reject
     response_time=None,  # time taken to accept or reject
@@ -177,25 +176,19 @@ if not DUMMY:
 # EEG TRIGGERS
 triggers = dict(
     exp_start=1,
-    offer_presentation=2,
-    participant_choice=3,
-    outcome_presentation=4,  # make the triggers more specific - will make analyses easier later!! e.g. success-outcome, failure-outcome, etc.  MAJA
+    block_start=2,
+    offer_presentation=3,
+    participant_choice=4,
+    outcome_presentation=5,  # make the triggers more specific - will make analyses easier later!! e.g. success-outcome, failure-outcome, etc.  MAJA
     # can use this like so:  trig = triggers['participant_choice']; win.flip(); send_trigger(trig)  MAJA
 )
-# send_triggers = expInfo['eeg (y/n)'].lower() == 'y'
-# if send_triggers:
-#     # triggers are  sent over a serial port, not parallel port (check which port is used on our testing computer) MAJA
-#     IOport = serial.Serial('COM4', 115200, timeout=0.001)  # port COM4, baud rate = 115200, timeout of 1ms
-#     def send_trigger(code):
-#         """
-#         code: expects an integer code (up to a maximum of 127, because of the serial port being weird)to send to the EEG)
-#         """
-#         IOport.write(str.encode(
-#             chr(code)))  # this expects bytes. therefore we need to convert the integers we are using as trigger codes
-#         IOport.flush()
-# else:
-#     def send_trigger(code):
-#         print('sending trigger: ' + str(code))
+send_triggers = expInfo['eeg (y/n)'].lower() == 'y'
+if send_triggers:
+    def send_trigger(code):
+        print('write function to trigger code ' + str(code))
+else:
+    def send_trigger(code):
+        print('sending trigger: ' + str(code))
 
 
 ###################################
@@ -275,7 +268,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 ###################################
 previous_action_type = 'initial'
 win.flip()
-while info['trial_count'] < gv['num_trials']:
+while info['trial_count'] < gv['num_trials']:  # thinks this must be < because we start with trial_count = 0
     # Set window color to blue at the start of each trial
     win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
     win.flip()
@@ -283,7 +276,8 @@ while info['trial_count'] < gv['num_trials']:
 
     # trial info
     trial_effort = gv['effort'][info['trial_count']]
-    trial_outcome = gv['outcome'][info['trial_count']]
+    trial_outcome_level = gv['outcome_level'][info['trial_count']]
+    trial_actual_outcome = gv['actual_outcome'][info['trial_count']]
     action_type = gv['action_type'][info['trial_count']]
     effort_state = gv['effort_state'][info['trial_count']]
     attention_focus = gv['attention_focus'][info['trial_count']]
@@ -295,7 +289,7 @@ while info['trial_count'] < gv['num_trials']:
     else:
         action_type = 'avoid'
         outcome_stimulus = 'meteors'
-        trial_outcome = -abs(gv['outcome'][info['trial_count']])
+        trial_actual_outcome = -abs(gv['actual_outcome'][info['trial_count']])
 
     # Check for action type change, skip comparison on the first trial
     if action_type != previous_action_type:
@@ -307,7 +301,7 @@ while info['trial_count'] < gv['num_trials']:
     previous_action_type = action_type
 
     # draw stimuli
-    spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv)
+    spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome_level, action_type, gv)
     stimuli = [spaceship, outline, target, effort_text, outcomes, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
     clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
@@ -320,7 +314,7 @@ while info['trial_count'] < gv['num_trials']:
         # success
         if result == 'success':
             if action_type == 'approach':
-                points = trial_outcome
+                points = trial_actual_outcome
             elif action_type == 'avoid':
                 points = 0
             hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type)
@@ -329,7 +323,7 @@ while info['trial_count'] < gv['num_trials']:
             if action_type == 'approach':
                 points = 0
             elif action_type == 'avoid':
-                points = trial_outcome
+                points = trial_actual_outcome
             hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type)
 
     # reject
@@ -339,7 +333,7 @@ while info['trial_count'] < gv['num_trials']:
         if action_type == 'approach':
             points = 0
         elif action_type == 'avoid':
-            points = trial_outcome
+            points = trial_actual_outcome
         hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type)
 
 
@@ -349,7 +343,8 @@ while info['trial_count'] < gv['num_trials']:
     info['block_global_effort_state'] = effort_state
     info['block_attention_focus'] = attention_focus
     info['trial_effort'] = trial_effort
-    info['trial_outcome'] = trial_outcome
+    info['trial_outcome_level'] = trial_outcome_level
+    info['trial_actual_outcome'] = trial_actual_outcome
     info['response'] = response
     info['response_time'] = response_time
     info['result'] = result

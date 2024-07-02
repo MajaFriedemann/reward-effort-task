@@ -348,3 +348,49 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     core.wait(3)  # Hold the final frame for a few seconds
 
 
+def get_rating(win, mouse, attention_focus):
+    """
+    Get a rating for heart rate of reward rate from the participant using a slider.
+    """
+    slider = visual.Slider(win,
+                           ticks=(1, 2, 3),
+                           labels=["Low", "", "High"],
+                           pos=(0, -20),
+                           size=(500, 70), units="pix", flip=True, style='slider', granularity=0, labelHeight=25)
+    slider.tickLines.sizes = (1, 70)
+
+    slider_marker = visual.ShapeStim(
+        win=win,
+        vertices=((0, -33), (0, 33)),
+        lineWidth=8,
+        pos=(0, 0),
+        closeShape=False,
+        lineColor=convert_rgb_to_psychopy([250, 243, 62]),
+    )
+
+    slider_question_text = visual.TextStim(
+        win,
+        text=f'Considering your recent {attention_focus} rate, how does it compare to your average {attention_focus} rate during the experiment?',
+        height=35,
+        pos=(0, 170),
+        color='white',
+        bold=True,
+        font='Monospace',
+        alignHoriz='center'
+    )
+
+    while not slider.rating:
+        # restrict slider marker to the range of slider
+        if mouse.getPos()[0] > (slider.size[0] / 2):
+            slider_marker.pos = ((slider.size[0] / 2), slider.pos[1])
+        elif mouse.getPos()[0] < -(slider.size[0] / 2):
+            slider_marker.pos = (-(slider.size[0] / 2), slider.pos[1])
+        else:
+            slider_marker.pos = (mouse.getPos()[0], slider.pos[1])
+        slider.draw()
+        slider_question_text.draw()
+        slider_marker.draw()
+        win.flip()
+
+    rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
+    return rating

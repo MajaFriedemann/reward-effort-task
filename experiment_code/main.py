@@ -70,6 +70,7 @@ gv = dict(
     effort = [],
     action_type = [],
     attention_focus = [],
+    rating_trial = [],
     effort_state = [],
 
     # visual parameters
@@ -91,6 +92,7 @@ if os.path.exists(trial_schedule_filepath):
             gv['effort'].append(int(row['effort']))
             gv['action_type'].append(row['action_type'])
             gv['attention_focus'].append(row['attention_focus'])
+            gv['rating_trial'].append(row['rating'])
             gv['effort_state'].append(row['global_effort_state'])
             max_trial_number = max(max_trial_number, int(row['trial_in_experiment']))
     gv['num_trials'] = max_trial_number
@@ -116,11 +118,12 @@ info = dict(
     gender=expInfo['gender (f/m/o)'],
     max_strength=max_strength,  # from calibration data
 
-    block_count=0,  # block counter
+    block_number=0,  # block counter
     trial_count=0,  # trial counter
     block_action_type = None,  # approach or avoid
     block_global_effort_state = None,  # low or high
     block_attention_focus = None,  # reward rate or heart rate
+    trial_rating = None,  # heart or reward rate rating
     trial_effort = None,  # effort level required in the trial
     trial_outcome_level = None,  # offered reward/loss
     trial_actual_outcome = None,
@@ -261,50 +264,76 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 # stimuli = [green_button, button_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli, 1)
 # hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+#
+# # Ratings
+# instructions_txt.text = ("Throughout this experiment, we will sometimes ask you how you are experiencing your heart rates and reward rates. "
+#                          "When asked about this, please consider your recent experiences in relation to your overall average experiences during the experiment.")
+# stimuli = [green_button, button_txt, instructions_txt]
+# hf.draw_all_stimuli(win, stimuli, 1)
+# hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
 
 
 ###################################
 # TASK
 ###################################
-previous_action_type = 'initial'
-win.flip()
-while info['trial_count'] < gv['num_trials']:  # thinks this must be < because we start with trial_count = 0
-    # Set window color to blue at the start of each trial
-    win.color = hf.convert_rgb_to_psychopy([0, 38, 82])
+current_block = 0
+while info['trial_count'] < gv['num_trials']:  # this must be < because we start with trial_count = 0
+
+    # pause for 1 second between trials
     win.flip()
     core.wait(1)
 
+    # reset variables
+    response = None
+    points = None
+    rating = None
+    result = None
+    effort_trace = None
+    effort_time = None
+    average_effort = None
+
     # trial info
+    block_number = gv['block_number'][info['trial_count']]
     trial_effort = gv['effort'][info['trial_count']]
     trial_outcome_level = gv['outcome_level'][info['trial_count']]
     trial_actual_outcome = gv['actual_outcome'][info['trial_count']]
     action_type = gv['action_type'][info['trial_count']]
     effort_state = gv['effort_state'][info['trial_count']]
     attention_focus = gv['attention_focus'][info['trial_count']]
+    rating_trial = gv['rating_trial'][info['trial_count']]
 
-    # MAJA - JUST FOR TESTING!!! changes block type every 3 trials
-    if (info['trial_count'] // 3) % 2 == 0:
-        action_type = 'approach'
-        outcome_stimulus = 'stars'
-    else:
-        action_type = 'avoid'
-        outcome_stimulus = 'meteors'
-        trial_actual_outcome = -abs(gv['actual_outcome'][info['trial_count']])
 
-    # Check for action type change, skip comparison on the first trial
-    if action_type != previous_action_type:
-        instructions_txt.text = (f"\nIn the next block of trials, \nyou will try to {action_type} {outcome_stimulus}. "
-                                 f"\n\n\n\n\nClick 'NEXT' when you are ready to begin.")
-        stimuli = [instructions_txt, green_button, button_txt]
-        hf.draw_all_stimuli(win, stimuli)
+    ##########################################################################################
+    ################################## FOR TESTING ###########################################
+    ##########################################################################################
+    rating_trial = "TRUE"
+    ##########################################################################################
+    ##########################################################################################
+
+
+    # check if we are at the beginning of a new block
+    if block_number != current_block:
+        current_block = block_number
+        win.color = 'black'  # set window color to black for block message
+        instructions_txt.text  = (
+            f"This is block {current_block} of {max(gv['block_number'])}. "
+            f"In this block, you will have to {action_type} stars to gain points. "
+            f"Pay attention to your {attention_focus} rate. "
+            "You may take a break if you like. When you're ready to continue, click the NEXT button."
+        )
+        stimuli = [green_button, button_txt, instructions_txt]
+        hf.draw_all_stimuli(win, stimuli, 1)
         hf.check_button(win, [green_button], stimuli, mouse)
-    previous_action_type = action_type
+        win.color = hf.convert_rgb_to_psychopy([0, 38, 82])  # set window color back to blue for trials
+    else:
+        pass
 
     # draw stimuli
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome_level, action_type, gv)
     stimuli = [spaceship, outline, target, effort_text, outcomes, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
     clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
+
 
     # accept
     if clicked_button == upper_button:
@@ -336,12 +365,23 @@ while info['trial_count'] < gv['num_trials']:  # thinks this must be < because w
             points = trial_actual_outcome
         hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type)
 
+    # check if we are in a rating trial
+    if rating_trial=="TRUE":
+        win.flip()
+        rating = hf.get_rating(win, mouse, attention_focus)
+        win.flip()
+    else:
+        pass
+    print("rating: ", rating)
+
 
     # save trial data
     info['trial_count'] += 1
+    info['block_number'] = block_number
     info['block_action_type'] = action_type
     info['block_global_effort_state'] = effort_state
     info['block_attention_focus'] = attention_focus
+    info['trial_rating'] = rating
     info['trial_effort'] = trial_effort
     info['trial_outcome_level'] = trial_outcome_level
     info['trial_actual_outcome'] = trial_actual_outcome

@@ -264,6 +264,8 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
 
         if dummy:
             effort_expended = mouse.getPos()[1]  # vertical movement
+            if effort_expended < 0:
+                effort_expended = 0
         else:
             effort_expended = (gripper.sample()[0] - gv['gripper_zero_baseline']) / gv['max_strength'] * 100
 

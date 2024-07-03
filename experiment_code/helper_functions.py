@@ -230,12 +230,14 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     return spaceship, outline, target, effort_text, outcomes
 
 
-def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv, EEG_config):
+def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv, EEG_config, effort_state):
     """
     Sample effort from gripper or mouse, zero_baseline and max_strength corrected.
     Effort needs to exceed a defined level for one consecutive second to be successful.
     If success is not achieved within a set time window, the trial is considered a failure.
     Outputs success/failure, the complete effort trace, and the average effort expended during the successful time window.
+    When global effort state is shifted, we manipulate the visual display of the effort and the threshold crossing (the shift will be subtracted from the dynamic effort bar).
+    However, the effort trace will still save the actual effort.
     """
     effort_trace = []
     average_effort = 0
@@ -264,15 +266,21 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
             effort_expended = mouse.getPos()[1]  # vertical movement
         else:
             effort_expended = (gripper.sample()[0] - gv['gripper_zero_baseline']) / gv['max_strength'] * 100
-        effort_trace.append(effort_expended)
-        dynamic_height = min(max(0, effort_expended), 100) * (138 / 100)
-        dynamic_bar.height = dynamic_height
-        dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
-        draw_all_stimuli(win, stimuli)
+
+        actual_effort_expended = effort_expended  # preserve the actual effort value
+        if effort_state == 'shifted':  # shift the effort for the visual display and the threshold crossing
+            effort_expended = (1 - np.exp(-effort_expended / gv['effort_shift_scaling_factor'])) * effort_expended
+
+        effort_trace.append(actual_effort_expended)
 
         if effort_expended > gv['effort_started_threshold'] and not effort_started:
             effort_started = True
             EEG_config.send_trigger(EEG_config.triggers['effort_started'])
+
+        dynamic_height = min(max(0, effort_expended), 100) * (138 / 100)
+        dynamic_bar.height = dynamic_height
+        dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
+        draw_all_stimuli(win, stimuli)
 
         if effort_expended > trial_effort:
             if not threshold_crossed:
@@ -281,9 +289,9 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
 
             if success_time is None:
                 success_time = trial_start_time.getTime()  # mark the time when effort first exceeds target
-                temp_effort_trace = [effort_expended]  # start tracking from this point
+                temp_effort_trace = [actual_effort_expended]  # start tracking the actual effort from this point
             else:
-                temp_effort_trace.append(effort_expended)  # continue tracking
+                temp_effort_trace.append(actual_effort_expended)  # continue tracking the actual effort
 
             if trial_start_time.getTime() - success_time >= gv['effort_duration']:  # check if it's been over a second
                 EEG_config.send_trigger(EEG_config.triggers['effort_success'])

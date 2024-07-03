@@ -62,6 +62,7 @@ gv = dict(
     effort_duration = 1,  # second duration for which the effort needs to be above threshold
     time_limit = 8,  # time limit for exerting the effort
     effort_started_threshold=0.1,  # threshold to consider effort exertion started for EEG trigger
+    effort_shift_scaling_factor = 25,  # scaling factor for exponential decay function to transform effort when global effort state is shifted
 
     # trial schedule
     num_trials = None,
@@ -225,7 +226,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 ###################################
 # Welcome
 big_txt.text = "Welcome!"
-instructions_txt.text = ("\n\n\n\n\nThis is the same task you practiced in you first session. We'll go over some quick "
+instructions_txt.text = ("\n\n\n\n\nThis is the same task you practiced in your training session. We'll go over some quick "
                          "instructions as a reminder of how the task works.\n\nWhen you're ready to begin, click 'NEXT'.")
 stimuli = [green_button, button_txt, big_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
@@ -315,6 +316,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     effort_trace = None
     effort_time = None
     average_effort = None
+    action_text = None
 
     # trial info
     block_number = gv['block_number'][info['trial_count']]
@@ -389,7 +391,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
         stimuli = [spaceship, outline, target, effort_text, outcomes]
-        result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, target, gv, EEG_config)
+        result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, target, gv, EEG_config, effort_state)
         # success
         if result == 'success':
             if action_type == 'approach':

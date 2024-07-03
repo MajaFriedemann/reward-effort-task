@@ -30,7 +30,7 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'trial schedule': 'A_1',  # schedule A or B, 1-8
+           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1)
            'grippers (y/n)': 'n', # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '1',
@@ -182,16 +182,12 @@ triggers = dict(
     block_start=2,
     offer_presentation=3,
     participant_choice=4,
-    outcome_presentation=5,  # make the triggers more specific - will make analyses easier later!! e.g. success-outcome, failure-outcome, etc.  MAJA
-    # can use this like so:  trig = triggers['participant_choice']; win.flip(); send_trigger(trig)  MAJA
+    outcome_presentation=5,
 )
+
+# Create an EEGConfig object
 send_triggers = expInfo['eeg (y/n)'].lower() == 'y'
-if send_triggers:
-    def send_trigger(code):
-        print('write function to trigger code ' + str(code))
-else:
-    def send_trigger(code):
-        print('sending trigger: ' + str(code))
+EEG_config = hf.EEGConfig(triggers, send_triggers)
 
 
 ###################################
@@ -218,6 +214,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 # stimuli = [green_button, button_txt, big_txt, instructions_txt]
 # hf.draw_all_stimuli(win, stimuli)
 # hf.check_button(win, [green_button], stimuli, mouse) # show instructions until button is pressed
+# send_trigger(triggers['experiment_start'])
 #
 # # Calibrate hand gripper
 # instructions_txt.text = ("First up, we need to calibrate the equipment. \nSo please do not yet touch the hand gripper. \n\n"
@@ -310,16 +307,20 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     ##########################################################################################
     ##########################################################################################
 
-
     # check if we are at the beginning of a new block
     if block_number != current_block:
+        EEG_config.send_trigger(EEG_config.triggers['block_start'])
         current_block = block_number
         win.color = 'black'  # set window color to black for block message
-        instructions_txt.text  = (
+        if action_type == 'approach':
+            action_text = "collect stars to gain points"
+        elif action_type == 'avoid':
+            action_text = "avoid meteors to prevent losing points"
+        instructions_txt.text = (
             f"This is block {current_block} of {max(gv['block_number'])}. "
-            f"In this block, you will have to {action_type} stars to gain points. "
-            f"Pay attention to your {attention_focus} rate. "
-            "You may take a break if you like. When you're ready to continue, click the NEXT button."
+            f"Your task is to {action_text}. "
+            f"Keep an eye on your {attention_focus} rate. "
+            "Feel free to take a break if needed. When you're ready to continue, click the NEXT button."
         )
         stimuli = [green_button, button_txt, instructions_txt]
         hf.draw_all_stimuli(win, stimuli, 1)
@@ -332,11 +333,15 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome_level, action_type, gv)
     stimuli = [spaceship, outline, target, effort_text, outcomes, upper_button, upper_button_txt, lower_button, lower_button_txt]
     hf.draw_all_stimuli(win, stimuli)
+    if action_type == 'approach':
+        EEG_config.send_trigger(EEG_config.triggers['offer_presentation_approach'])
+    elif action_type == 'avoid':
+        EEG_config.send_trigger(EEG_config.triggers['offer_presentation_avoid'])
     clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
-
 
     # accept
     if clicked_button == upper_button:
+        EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
         stimuli = [spaceship, outline, target, effort_text, outcomes]
         result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli, trial_effort, target, gv)
@@ -357,6 +362,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
 
     # reject
     elif clicked_button == lower_button:
+        EEG_config.send_trigger(EEG_config.triggers['participant_choice_reject'])
         response = 'reject'
         result, effort_trace, average_effort, effort_time = None, None, None, None
         if action_type == 'approach':
@@ -367,9 +373,14 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
 
     # check if we are in a rating trial
     if rating_trial=="TRUE":
-        win.flip()
-        rating = hf.get_rating(win, mouse, attention_focus)
-        win.flip()
+        if attention_focus == "reward":
+            EEG_config.send_trigger(EEG_config.triggers['rating_question_reward'])
+            rating = hf.get_rating(win, mouse, attention_focus)
+            EEG_config.send_trigger(EEG_config.triggers['rating_response_reward'])
+        elif attention_focus == "heart":
+            EEG_config.send_trigger(EEG_config.triggers['rating_question_heart'])
+            rating = hf.get_rating(win, mouse, attention_focus)
+            EEG_config.send_trigger(EEG_config.triggers['rating_response_heart'])
     else:
         pass
     print("rating: ", rating)

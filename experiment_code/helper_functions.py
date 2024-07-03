@@ -15,6 +15,21 @@ import serial
 
 
 ###################################
+# CLASSES
+###################################
+class EEGConfig:
+    def __init__(self, triggers, send_triggers):
+        self.triggers = triggers
+        self.send_triggers = send_triggers
+
+    def send_trigger(self, code):
+        if self.send_triggers:
+            print('write function to trigger code ' + str(code))
+        else:
+            print('sending trigger: ' + str(code))
+
+
+###################################
 # FUNCTIONS
 ###################################
 def exit_q(win, key_list=None):

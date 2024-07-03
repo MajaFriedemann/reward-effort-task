@@ -26,7 +26,7 @@ class EEGConfig:
         if self.send_triggers:
             print('write function to trigger code ' + str(code))
         else:
-            print('sending trigger: ' + str(code))
+            print('would send trigger: ' + str(code))
 
 
 ###################################
@@ -230,7 +230,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     return spaceship, outline, target, effort_text, outcomes
 
 
-def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv):
+def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv, EEG_config):
     """
     Sample effort from gripper or mouse, zero_baseline and max_strength corrected.
     Effort needs to exceed a defined level for one consecutive second to be successful.
@@ -253,6 +253,8 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv)
     )
     stimuli.append(target)
     stimuli.append(dynamic_bar)
+    effort_started = False
+    threshold_crossed = False
 
     while not success and not trial_failed:
         if trial_start_time.getTime() > gv['time_limit']:  # check if max time allowed has passed
@@ -267,13 +269,24 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv)
         dynamic_bar.height = dynamic_height
         dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
         draw_all_stimuli(win, stimuli)
+
+        if effort_expended > gv['effort_started_threshold'] and not effort_started:
+            effort_started = True
+            EEG_config.send_trigger(EEG_config.triggers['effort_started'])
+
         if effort_expended > trial_effort:
+            if not threshold_crossed:
+                EEG_config.send_trigger(EEG_config.triggers['effort_threshold_crossed'])
+                threshold_crossed = True
+
             if success_time is None:
                 success_time = trial_start_time.getTime()  # mark the time when effort first exceeds target
                 temp_effort_trace = [effort_expended]  # start tracking from this point
             else:
                 temp_effort_trace.append(effort_expended)  # continue tracking
+
             if trial_start_time.getTime() - success_time >= gv['effort_duration']:  # check if it's been over a second
+                EEG_config.send_trigger(EEG_config.triggers['effort_success'])
                 success = True
                 average_effort = sum(temp_effort_trace) / len(temp_effort_trace) if temp_effort_trace else 0
         else:
@@ -296,7 +309,7 @@ def update_position(stimuli, delta_pos):
         stim.pos += delta_pos
 
 
-def animate_success(win, spaceship, outcomes, target, outline, points, action_type):
+def animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config):
     """
     Animate the success outcome for either approach or avoid blocks, including displaying points.
     """
@@ -304,9 +317,9 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     points_text = visual.TextStim(
         win,
         text=f'+{points} POINTS!' if action_type == 'approach' else f'{points} POINTS!',
-        height=50,
-        pos=(0, 130),
-        color=convert_rgb_to_psychopy([250, 243, 62]),
+        height=60,
+        pos=(0, 80),
+        color='white',
         bold=True,
         font='Monospace',
         alignHoriz='center'
@@ -329,10 +342,14 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         draw_all_stimuli(win, stimuli)
 
     draw_all_stimuli(win, [points_text])
-    core.wait(3)  # Hold the final frame for a few seconds
+    if action_type == 'approach':
+        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_success'])
+    elif action_type == 'avoid':
+        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_success'])
+    core.wait(2.5)  # Hold the final frame for a few seconds
 
 
-def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type):
+def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config):
     """
     Animate the failure outcome for either approach or avoid blocks, showing negative consequences.
     """
@@ -340,9 +357,9 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     points_text = visual.TextStim(
         win,
         text=f'{points} POINTS!',
-        height=50,
-        pos=(0, 130),
-        color=convert_rgb_to_psychopy([250, 243, 62]),
+        height=60,
+        pos=(0, 80),
+        color='white',
         bold=True,
         font='Monospace',
         alignHoriz='center'
@@ -360,7 +377,17 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         draw_all_stimuli(win, stimuli)
 
     draw_all_stimuli(win, [points_text])
-    core.wait(3)  # Hold the final frame for a few seconds
+    if action_type == 'approach':
+        if result == 'failure':
+            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_failure'])
+        elif result == 'reject':
+            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_reject'])
+    elif action_type == 'avoid':
+        if result == 'failure':
+            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_failure'])
+        elif result == 'reject':
+            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_reject'])
+    core.wait(2.5)  # Hold the final frame for a few seconds
 
 
 def get_rating(win, mouse, attention_focus):

@@ -271,7 +271,9 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
 
         actual_effort_expended = effort_expended  # preserve the actual effort value
         if effort_state == 'shifted':  # shift the effort for the visual display and the threshold crossing
-            effort_expended = (1 - np.exp(-effort_expended / gv['effort_shift_scaling_factor'])) * effort_expended
+            effort_level = trial_effort/10
+            shifted_effort_level = np.sqrt((gv['assumed_k'] * effort_level**2 + gv['net_vaue_shift']) / gv['assumed_k'])
+            effort_expended = shifted_effort_level*10
 
         effort_trace.append(actual_effort_expended)
 

@@ -1,0 +1,13 @@
+outcome_level,actual_outcome,effort,action_type,rating,trial_in_block,trial_order,attention_focus,global_effort_state,trial_in_experiment,block_number,schedule_version
+40,42,50,approach,False,1,training_trials,heart,normal,1,1,training_schedule
+20,20,55,approach,False,2,training_trials,heart,normal,2,1,training_schedule
+100,116,80,approach,True,3,training_trials,heart,normal,3,1,training_schedule
+80,77,70,approach,False,1,training_trials,reward,normal,4,2,training_schedule
+40,40,50,approach,False,2,training_trials,reward,normal,5,2,training_schedule
+60,55,60,approach,True,3,training_trials,reward,normal,6,2,training_schedule
+-20,-14,90,avoid,False,1,training_trials,heart,normal,7,3,training_schedule
+-60,-60,85,avoid,False,2,training_trials,heart,normal,8,3,training_schedule
+-40,-42,75,avoid,True,3,training_trials,heart,normal,9,3,training_schedule
+-100,-98,100,avoid,False,1,training_trials,reward,normal,10,4,training_schedule
+-80,-85,95,avoid,False,2,training_trials,reward,normal,11,4,training_schedule
+-20,-17,55,avoid,True,3,training_trials,reward,normal,12,4,training_schedule

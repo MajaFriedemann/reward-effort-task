@@ -461,17 +461,17 @@ def get_rating(win, mouse, attention_focus):
 
 
 
+
 ###################################
 # TRAINING SESSION INSTRUCTIONS
 ###################################
-def training_session_instructions(big_txt, instructions_txt, instructions_top_txt, green_button, button_txt, win, mouse, EEG_config, gripper, DUMMY, gv):
+def training_instructions_1(big_txt, instructions_txt, green_button, button_txt, win, mouse):
     # Welcome
     big_txt.text = "Welcome to the experiment!"
     instructions_txt.text = "\n\n\n\n\nYou're about to begin a training session to familiarise yourself with the task. We'll guide you through each step.\n\nWhen you're ready, click 'NEXT'."
     stimuli = [green_button, button_txt, big_txt, instructions_txt]
     draw_all_stimuli(win, stimuli)
     check_button(win, [green_button], stimuli, mouse)
-    EEG_config.send_trigger(EEG_config.triggers['experiment_start'])
 
     # Calibrate hand gripper
     instructions_txt.text = ("In this experiment, you'll be using a hand gripper to exert effort."
@@ -482,19 +482,8 @@ def training_session_instructions(big_txt, instructions_txt, instructions_top_tx
     draw_all_stimuli(win, stimuli)
     check_button(win, [green_button], stimuli, mouse)
 
-    # CALIBRATE HAND GRIPPER ZERO BASELINE
-    win.flip()
-    instructions_top_txt.text = "Calibration in progress. \n\nPlease keep your hands away from the gripper."
-    draw_all_stimuli(win, [instructions_top_txt], 1)
-    big_txt.pos = [0, 20]
-    for countdown in range(3, 0, -1):
-        big_txt.text = str(countdown)
-        draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
-        if not DUMMY and countdown == 1:
-            gv['gripper_zero_baseline'] = gripper.sample()[0]
-    win.flip()
-    core.wait(1)
 
+def training_instructions_2(big_txt, instructions_txt, green_button, button_txt, win, mouse):
     # Task overview
     instructions_txt.text = ("Great! Calibration is complete.\n\n"
                              "Now, let's learn about the task. In this experiment, you'll control a spaceship."
@@ -505,15 +494,17 @@ def training_session_instructions(big_txt, instructions_txt, instructions_top_tx
     check_button(win, [green_button], stimuli, mouse)
 
     # Block types
-    instructions_txt.text = ("There are two types of trials in this task:\n\n"
-                             "1. Approach Trials: You'll see a cloud of stars.\n"
-                             "   - The number of stars represents the reward you can earn.\n"
-                             "   - If you accept and successfully exert the required effort, you'll gain the reward.\n"
-                             "   - If you reject or fail to exert enough effort, you'll get no reward.\n\n"
-                             "2. Avoid Trials: You'll see a cloud of meteors.\n"
-                             "   - The number of meteors represents a potential loss.\n"
-                             "   - If you accept and successfully exert the required effort, you'll avoid the loss.\n"
-                             "   - If you reject or fail to exert enough effort, you'll incur the loss.")
+    instructions_txt.text = (
+        "There are two types of trials in this task:\n\n"
+        "1. Approach Trials: You'll see a cloud of stars.\n"
+        "   - The number of stars represents the reward you can earn.\n"
+        "   - If you accept and successfully exert the required effort, you'll gain the reward.\n"
+        "   - If you reject or fail to exert enough effort, you'll get no reward.\n\n"
+        "2. Avoid Trials: You'll see a cloud of meteors.\n"
+        "   - The number of meteors represents a potential loss.\n"
+        "   - If you accept and successfully exert the required effort, you'll avoid the loss.\n"
+        "   - If you reject or fail to exert enough effort, you'll incur the loss."
+    )
     stimuli = [green_button, button_txt, instructions_txt]
     draw_all_stimuli(win, stimuli, 1)
     check_button(win, [green_button], stimuli, mouse)
@@ -523,7 +514,7 @@ def training_session_instructions(big_txt, instructions_txt, instructions_top_tx
                              "1. Offer: You'll see either stars (reward) or meteors (potential loss).\n"
                              "2. Decision: Choose to accept or reject the offer.\n"
                              "3. Effort: If accepted, squeeze the hand gripper to the required level.\n"
-                             "4. Outcome: See whether you succeeded and your current score.")
+                             "4. Outcome: See how many points you won or lost.")
     stimuli = [green_button, button_txt, instructions_txt]
     draw_all_stimuli(win, stimuli, 1)
     check_button(win, [green_button], stimuli, mouse)

@@ -30,7 +30,7 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'trial schedule': 'training',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'traning' for training session
+           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'traning' for training session
            'grippers (y/n)': 'n', # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '0',  # 0 for training session
@@ -232,8 +232,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
 # INSTRUCTIONS
 ###################################
 if gv['training']:
-    hf.training_session_instructions(big_txt, instructions_txt, instructions_top_txt, green_button, button_txt, win, mouse, EEG_config, gripper, DUMMY, gv)
-
+    hf.training_instructions_1(big_txt, instructions_txt, green_button, button_txt, win, mouse)
 else:
     # Welcome
     big_txt.text = "Welcome!"
@@ -253,19 +252,24 @@ else:
     hf.draw_all_stimuli(win, stimuli)
     hf.check_button(win, [green_button], stimuli, mouse)
 
-    # CALIBRATE HAND GRIPPER ZERO BASELINE
-    win.flip()
-    instructions_top_txt.text = "Calibration in progress. \n\nPlease keep your hands away from the gripper."
-    hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-    big_txt.pos = [0, 20]
-    for countdown in range(3, 0, -1):
-        big_txt.text = str(countdown)
-        hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
-        if not DUMMY and countdown == 1:
-            gv['gripper_zero_baseline'] = gripper.sample()[0]
-    win.flip()
-    core.wait(1)
 
+# CALIBRATE HAND GRIPPER ZERO BASELINE
+win.flip()
+instructions_top_txt.text = "Calibration in progress. \n\nPlease keep your hands away from the gripper."
+hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+big_txt.pos = [0, 20]
+for countdown in range(3, 0, -1):
+    big_txt.text = str(countdown)
+    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
+    if not DUMMY and countdown == 1:
+        gv['gripper_zero_baseline'] = gripper.sample()[0]
+win.flip()
+core.wait(1)
+
+
+if gv['training']:
+    hf.training_instructions_2(big_txt, instructions_txt, green_button, button_txt, win, mouse)
+else:
     # Task overview
     instructions_txt.text = ("Great! Calibration is complete.\n\n"
                              "Just to remind you, in this task, you'll control a spaceship. Your goal is to fill it with fuel by exerting effort using the handgripper.\n\n"
@@ -377,10 +381,9 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         elif action_type == 'avoid':
             action_text = "evade meteors to avoid losing points"
         instructions_txt.text = (
-            f"This is block {current_block} of {max(gv['block_number'])}."
+            f"You may take a short break if needed.\n\nThis is block {current_block} of {max(gv['block_number'])}."
             f"Your mission is to {action_text}.\n\n"
             f"Throughout this block, pay attention to your {attention_focus} rate.\n\n"
-            "You may take a short break if needed. "
             "When you're ready to continue, click the 'START' button."
         )
         stimuli = [green_button, button_txt, instructions_txt]

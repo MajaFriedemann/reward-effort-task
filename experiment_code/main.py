@@ -416,14 +416,14 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
                 points = trial_actual_outcome
             elif action_type == 'avoid':
                 points = 0
-            hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config)
+            hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv)
         # failure
         elif result == 'failure':
             if action_type == 'approach':
                 points = 0
             elif action_type == 'avoid':
                 points = trial_actual_outcome
-            hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config)
+            hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv)
 
     # reject
     elif clicked_button == lower_button:
@@ -434,7 +434,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
             points = 0
         elif action_type == 'avoid':
             points = trial_actual_outcome
-        hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config)
+        hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, response, EEG_config, gv)
 
     # check if we are in a rating trial
     if rating_trial=="TRUE":

@@ -210,7 +210,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         color='white',
         bold=True,
         font='Monospace',
-        alignHoriz='center'
+        alignText='center'
     )
 
     # STARS/METEORS
@@ -331,7 +331,7 @@ def update_position(stimuli, delta_pos):
         stim.pos += delta_pos
 
 
-def animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config):
+def animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv):
     """
     Animate the success outcome for either approach or avoid blocks, including displaying points.
     """
@@ -344,8 +344,18 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         color='white',
         bold=True,
         font='Monospace',
-        alignHoriz='center'
+        alignText='center',
+        wrapWidth=800,
     )
+
+    if gv['training']:
+        if action_type == 'approach':
+            points_text.text = f'Great! You reached the stars! \n\n{points} POINTS WIN!'
+        if action_type == 'avoid':
+            points_text.text = f'Great! You evaded the meteors! \n\n{points} POINTS LOST!'
+    else:
+        pass
+
     flame = visual.ImageStim(
         win,
         image='pictures/flame.png',
@@ -371,7 +381,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     core.wait(2)  # Hold the final frame for a few seconds
 
 
-def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config):
+def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv):
     """
     Animate the failure outcome for either approach or avoid blocks, showing negative consequences.
     """
@@ -384,8 +394,16 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         color='white',
         bold=True,
         font='Monospace',
-        alignHoriz='center'
+        alignText='center',
+        wrapWidth=800
     )
+    if gv['training']:
+        if result == 'failure':
+            points_text.text = f'You failed to exert the required effort! \n\n{points} POINTS!'
+        if result == 'reject':
+            points_text.text = f'You rejected the offer! \n\n{points} POINTS!'
+    else:
+        pass
 
     for frame in range(frames):
         update_opacity([spaceship, outline, target] + outcomes, frame, frames)
@@ -440,7 +458,7 @@ def get_rating(win, mouse, attention_focus):
         color='white',
         bold=True,
         font='Monospace',
-        alignHoriz='center'
+        alignText='center'
     )
 
     while not slider.rating:

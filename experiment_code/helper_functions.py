@@ -48,10 +48,11 @@ def exit_q(win, key_list=None):
     return res
 
 
-def draw_all_stimuli(win, stimuli, wait=0.01):
+def draw_all_stimuli(win, stimuli, wait=0.0):
     """
-    draw all stimuli, flip window, wait (default wait time is 0.01)
+    draw all stimuli, flip window, wait
     """
+    win.setMouseVisible(True)  # ensure the cursor is always visible and set to the arrow type
     flattened_stimuli = [stim for sublist in stimuli for stim in (sublist if isinstance(sublist, list) else [sublist])]  # flatten the list of stimuli to accommodate nested lists
     for stimulus in flattened_stimuli:
         stimulus.draw()
@@ -60,23 +61,29 @@ def draw_all_stimuli(win, stimuli, wait=0.01):
 
 def check_button(win, buttons, stimuli, mouse):
     """
-    check for button hover and click for multiple buttons.
-    return the button object that was clicked and the response time.
+    Check for button hover and click for multiple buttons.
+    Return the button object that was clicked and the response time.
     """
-    draw_all_stimuli(win, stimuli, 0.2)
     response_timer = core.Clock()  # Start the response timer
-    button_glows = [visual.Rect(win, width=button.width+15, height=button.height+15, pos=button.pos, fillColor=button.fillColor, opacity=0.5) for button in buttons]
-
+    button_glows = [
+        visual.Rect(win, width=button.width + 15, height=button.height + 15, pos=button.pos, fillColor=button.fillColor,
+                    opacity=0.5) for button in buttons]
     while True:  # Use an infinite loop that will break when a button is clicked
         for button, button_glow in zip(buttons, button_glows):
             if button.contains(mouse):  # check for hover
                 button_glow.draw()  # hover, draw button glow
-            if mouse.isPressedIn(button):  # check for click
-                response_time = response_timer.getTime()  # Get the response time
-                core.wait(0.5)  # add delay to provide feedback of a click
-                return button, response_time  # return the button that was clicked and the response time
-
+            else:
+                button.draw()  # draw the button if not hovered
         draw_all_stimuli(win, stimuli)  # redraw stimuli and check again
+        # check for mouse press using mouse.getPressed
+        if mouse.getPressed()[0]:  # Left mouse button is pressed
+            for button in buttons:
+                if button.contains(mouse):
+                    response_time = response_timer.getTime()  # Get the response time
+                    core.wait(0.2)  # add delay to provide feedback of a click
+                    return button, response_time  # return the button that was clicked and the response time
+        # flush the event queue to avoid stale events
+        event.clearEvents()
 
 
 def convert_rgb_to_psychopy(color, alpha=1.0):
@@ -269,13 +276,16 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
         else:
             effort_expended = (gripper.sample()[0] - gv['gripper_zero_baseline']) / gv['max_strength'] * 100
 
+        # if effort state is 'shifted', adjust the effort for visual display and threshold crossing
         actual_effort_expended = effort_expended  # preserve the actual effort value
-        if effort_state == 'shifted':  # shift the effort for the visual display and the threshold crossing
-            effort_level = trial_effort/10
-            shifted_effort_level = np.sqrt((gv['assumed_k'] * effort_level**2 + gv['net_vaue_shift']) / gv['assumed_k'])
-            effort_expended = shifted_effort_level*10
+        if effort_state == 'shifted':
+            actual_effort_expended_level = actual_effort_expended / 10
+            shifted_effort_expended_level = np.sqrt((gv['assumed_k'] * actual_effort_expended_level ** 2 + gv['net_value_shift']) / gv['assumed_k'])
+            shifted_effort_expended = shifted_effort_expended_level * 10
+            extra_effort_required = shifted_effort_expended - actual_effort_expended
+            effort_expended -= extra_effort_required
 
-        effort_trace.append(actual_effort_expended)
+        effort_trace.append(actual_effort_expended)  # append the actual effort to the trace we are saving
 
         if effort_expended > gv['effort_started_threshold'] and not effort_started:
             effort_started = True
@@ -351,14 +361,14 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         update_position([spaceship, outline, target], move_delta)
         flame.pos = (spaceship.pos[0], spaceship.pos[1] + flame_delta[1])
         stimuli = [spaceship, outline, target, flame] + outcomes
-        draw_all_stimuli(win, stimuli)
+        draw_all_stimuli(win, stimuli, 0.01)
 
     draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_success'])
     elif action_type == 'avoid':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_success'])
-    core.wait(2.5)  # Hold the final frame for a few seconds
+    core.wait(2)  # Hold the final frame for a few seconds
 
 
 def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config):
@@ -386,7 +396,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
                     outcome.pos[1] - (frame / frames) * 50
                 )
         stimuli = [spaceship, outline, target] + outcomes
-        draw_all_stimuli(win, stimuli)
+        draw_all_stimuli(win, stimuli, 0.01)
 
     draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
@@ -399,7 +409,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
             EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_failure'])
         elif result == 'reject':
             EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_reject'])
-    core.wait(2.5)  # Hold the final frame for a few seconds
+    core.wait(2)  # Hold the final frame for a few seconds
 
 
 def get_rating(win, mouse, attention_focus):
@@ -448,3 +458,112 @@ def get_rating(win, mouse, attention_focus):
 
     rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
     return rating
+
+
+
+###################################
+# TRAINING SESSION INSTRUCTIONS
+###################################
+def training_session_instructions(big_txt, instructions_txt, instructions_top_txt, green_button, button_txt, win, mouse, EEG_config, gripper, DUMMY, gv):
+    # Welcome
+    big_txt.text = "Welcome to the experiment!"
+    instructions_txt.text = "\n\n\n\n\nYou're about to begin a training session to familiarise yourself with the task. We'll guide you through each step.\n\nWhen you're ready, click 'NEXT'."
+    stimuli = [green_button, button_txt, big_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli)
+    check_button(win, [green_button], stimuli, mouse)
+    EEG_config.send_trigger(EEG_config.triggers['experiment_start'])
+
+    # Calibrate hand gripper
+    instructions_txt.text = ("In this experiment, you'll be using a hand gripper to exert effort."
+                             "\n\nBefore we start, we need to quickly recalibrate the equipment. "
+                             "Please don't touch the hand gripper yet.\n\n"
+                             "Click 'NEXT' to begin the calibration process.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # CALIBRATE HAND GRIPPER ZERO BASELINE
+    win.flip()
+    instructions_top_txt.text = "Calibration in progress. \n\nPlease keep your hands away from the gripper."
+    draw_all_stimuli(win, [instructions_top_txt], 1)
+    big_txt.pos = [0, 20]
+    for countdown in range(3, 0, -1):
+        big_txt.text = str(countdown)
+        draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
+        if not DUMMY and countdown == 1:
+            gv['gripper_zero_baseline'] = gripper.sample()[0]
+    win.flip()
+    core.wait(1)
+
+    # Task overview
+    instructions_txt.text = ("Great! Calibration is complete.\n\n"
+                             "Now, let's learn about the task. In this experiment, you'll control a spaceship."
+                             "Your goal is to fill the spaceship with fuel by exerting effort using the hand gripper.\n\n"
+                             "The task consists of multiple trials, each presenting you with a choice.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Block types
+    instructions_txt.text = ("There are two types of trials in this task:\n\n"
+                             "1. Approach Trials: You'll see a cloud of stars.\n"
+                             "   - The number of stars represents the reward you can earn.\n"
+                             "   - If you accept and successfully exert the required effort, you'll gain the reward.\n"
+                             "   - If you reject or fail to exert enough effort, you'll get no reward.\n\n"
+                             "2. Avoid Trials: You'll see a cloud of meteors.\n"
+                             "   - The number of meteors represents a potential loss.\n"
+                             "   - If you accept and successfully exert the required effort, you'll avoid the loss.\n"
+                             "   - If you reject or fail to exert enough effort, you'll incur the loss.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Trial structure
+    instructions_txt.text = ("Each trial follows this structure:\n\n"
+                             "1. Offer: You'll see either stars (reward) or meteors (potential loss).\n"
+                             "2. Decision: Choose to accept or reject the offer.\n"
+                             "3. Effort: If accepted, squeeze the hand gripper to the required level.\n"
+                             "4. Outcome: See whether you succeeded and your current score.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Effort gauge explanation
+    instructions_txt.text = ("During the effort phase, you'll see a vertical gauge on the screen:\n\n"
+                             "- The gauge fills up as you squeeze the hand gripper.\n"
+                             "- A horizontal line shows the required effort level.\n"
+                             "- You must keep the gauge above this line for the entire duration.\n"
+                             "- The duration is shown by a shrinking bar at the top of the screen.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Monetary reward
+    instructions_txt.text = ("Your performance in this task translates to real money!\n\n"
+                             "At the end of the experiment, we'll randomly select xx trials.\n"
+                             "Your points from these trials will be converted into a monetary reward.\n\n"
+                             "Each point is worth 1p. For example:\n"
+                             "- If you have 100 points, you'll win £1\n"
+                             "- If you have 500 points, you'll win £5")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Ratings
+    instructions_txt.text = ("Throughout the experiment, we'll occasionally ask you about two things:\n\n"
+                             "1. Your heart rate: How fast do you feel your heart is beating?\n"
+                             "2. Your reward rate: How rewarding do you find the task at that moment?\n\n"
+                             "When asked, consider your recent experiences compared to your overall average during the experiment.\n"
+                             "You'll use a slider to indicate your response.")
+    stimuli = [green_button, button_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 1)
+    check_button(win, [green_button], stimuli, mouse)
+
+    # Start training
+    big_txt.text = "Let's start the training!"
+    instructions_txt.text = ("You'll now complete a few practice trials to get familiar with the task.\n"
+                             "Remember, this is just for practice. Ask questions if anything is unclear.\n\n"
+                             "Good luck!")
+    stimuli = [big_txt, instructions_txt]
+    draw_all_stimuli(win, stimuli, 3)
+

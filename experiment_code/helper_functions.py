@@ -52,7 +52,6 @@ def draw_all_stimuli(win, stimuli, wait=0.0):
     """
     draw all stimuli, flip window, wait
     """
-    win.setMouseVisible(True)  # ensure the cursor is always visible and set to the arrow type
     flattened_stimuli = [stim for sublist in stimuli for stim in (sublist if isinstance(sublist, list) else [sublist])]  # flatten the list of stimuli to accommodate nested lists
     for stimulus in flattened_stimuli:
         stimulus.draw()
@@ -454,11 +453,12 @@ def get_rating(win, mouse, attention_focus):
         win,
         text=f'Considering your recent {attention_focus} rate, how does it compare to your average {attention_focus} rate during the experiment?',
         height=35,
-        pos=(0, 170),
+        pos=(0, 190),
         color='white',
         bold=True,
         font='Monospace',
-        alignText='center'
+        alignText='center',
+        wrapWidth=600
     )
 
     while not slider.rating:

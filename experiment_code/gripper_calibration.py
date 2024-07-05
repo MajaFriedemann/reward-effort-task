@@ -25,7 +25,7 @@ expName = 'reward-strength-pgACC-TUS_calibration'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
            'gripper hand (l/r)': '',
-           'dummy (y/n)': 'y'}
+           'dummy (y/n)': 'n'}
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName) # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
 if not dlg.OK:
     core.quit()  # pressed cancel on the pop-up window
@@ -87,8 +87,8 @@ win = visual.Window(
 ###################################
 # CREATE STIMULI
 ###################################
-green_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -270), fillColor='green')
-button_txt = visual.TextStim(win=win, text='NEXT', height=25, pos=green_button.pos, color='black', bold=True,font='Monospace')
+green_button = visual.Rect(win=win, units="pix", width=160, height=80, pos=(0, -280), fillColor='green')
+button_txt = visual.TextStim(win=win, text='NEXT', height=28, pos=green_button.pos, color='black', bold=True,font='Monospace')
 big_txt = visual.TextStim(win=win, text='Welcome to the \ngrip strength test!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
 instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
 instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Monospace')
@@ -133,7 +133,9 @@ for countdown in range(3, 0, -1):
     big_txt.text = str(countdown)
     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1) # display a 3, 2, 1 countdown
     if not DUMMY and countdown == 3:
-        gripper_zero_baseline = gripper.sample()[0] # on 1, sample the gripper 0 baseline
+        gripper_zero_baseline = gripper.sample()[0]  # on 1, sample the gripper 0 baseline
+win.flip()
+core.wait(1)
 
 
 # INSTRUCTIONS
@@ -152,8 +154,8 @@ max_trial_strengths = []
 trial_strength_samples = []
 
 for trial in range(3):  # 3 calibration trials
-    prev_strength_samples = strength_samples.copy() # get previous trial's strength_samples
-    prev_times = times.copy() # get previous trial's times
+    prev_strength_samples = strength_samples.copy()  # get previous trial's strength_samples
+    prev_times = times.copy()  # get previous trial's times
     strength_samples = []  # reset the current trial's strength_samples
     times = []  # reset the current trial's times
 

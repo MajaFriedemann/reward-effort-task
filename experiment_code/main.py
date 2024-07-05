@@ -175,7 +175,6 @@ win = visual.Window(
 # MOUSE
 mouse = event.Mouse(visible=True, win=win)
 mouse.setVisible(True)
-win.setMouseVisible(False)
 win.setMouseVisible(True)
 
 # HAND GRIPPER
@@ -307,7 +306,7 @@ else:
     # Start
     win.flip()
     big_txt.pos = [0, 70]
-    big_txt.text = "Let's begin!"
+    big_txt.text = "Take the gripper in your hand and let's begin!"
     big_txt.draw()
     win.flip()
     core.wait(2)

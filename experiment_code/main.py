@@ -175,6 +175,7 @@ win = visual.Window(
 # MOUSE
 mouse = event.Mouse(visible=True, win=win)
 mouse.setVisible(True)
+win.setMouseVisible(False)
 win.setMouseVisible(True)
 
 # HAND GRIPPER
@@ -350,7 +351,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     ##########################################################################################
     ################################## FOR TESTING ###########################################
     ##########################################################################################
-    # rating_trial = "TRUE"
+    rating_trial = "TRUE"
     # effort_state = 'shifted'
     ##########################################################################################
     ##########################################################################################
@@ -381,7 +382,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         elif action_type == 'avoid':
             action_text = "evade meteors to avoid losing points"
         instructions_txt.text = (
-            f"You may take a short break if needed.\n\nThis is block {current_block} of {max(gv['block_number'])}."
+            f"This is block {current_block} of {max(gv['block_number'])}.\n\n"
             f"Your mission is to {action_text}.\n\n"
             f"Throughout this block, pay attention to your {attention_focus} rate.\n\n"
             "When you're ready to continue, click the 'START' button."

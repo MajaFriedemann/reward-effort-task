@@ -338,7 +338,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text=f'+{points} POINTS!' if action_type == 'approach' else f'{points} POINTS!',
+        text=f'+{points} POINTS' if action_type == 'approach' else f'{points} POINTS',
         height=60,
         pos=(0, 80),
         color='white',
@@ -388,7 +388,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text=f'{points} POINTS!',
+        text=f'{points} POINTS',
         height=60,
         pos=(0, 80),
         color='white',
@@ -399,9 +399,9 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     )
     if gv['training']:
         if result == 'failure':
-            points_text.text = f'You failed to exert the required effort! \n\n{points} POINTS!'
+            points_text.text = f'You failed to exert the required effort! \n\n{points} POINTS'
         if result == 'reject':
-            points_text.text = f'You rejected the offer! \n\n{points} POINTS!'
+            points_text.text = f'You rejected the offer! \n\n{points} POINTS'
     else:
         pass
 
@@ -444,7 +444,7 @@ def get_rating(win, mouse, attention_focus):
     slider_marker = visual.ShapeStim(
         win=win,
         vertices=((0, -33), (0, 33)),
-        lineWidth=8,
+        lineWidth=12,
         pos=(0, 0),
         closeShape=False,
         lineColor=convert_rgb_to_psychopy([250, 243, 62]),
@@ -475,6 +475,7 @@ def get_rating(win, mouse, attention_focus):
         win.flip()
 
     rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
+    core.wait(0.5)
     return rating
 
 

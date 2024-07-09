@@ -88,10 +88,10 @@ win = visual.Window(
 # CREATE STIMULI
 ###################################
 green_button = visual.Rect(win=win, units="pix", width=160, height=80, pos=(0, -280), fillColor='green')
-button_txt = visual.TextStim(win=win, text='NEXT', height=28, pos=green_button.pos, color='black', bold=True,font='Monospace')
-big_txt = visual.TextStim(win=win, text='Welcome to the \ngrip strength test!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Monospace')
-instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Monospace')
-instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Monospace')
+button_txt = visual.TextStim(win=win, text='NEXT', height=28, pos=green_button.pos, color='black', bold=True,font='Arial')
+big_txt = visual.TextStim(win=win, text='Welcome to the \ngrip strength test!', height=90, pos=[0, 40], color='white', wrapWidth=800, font='Arial')
+instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=900, color='white', font='Arial')
+instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 220], wrapWidth=1200, color='white', font='Arial')
 
 graph_start_x = -300
 graph_length = 600

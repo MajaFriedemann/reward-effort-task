@@ -208,7 +208,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         pos=(200, -20),
         color='white',
         bold=True,
-        font='Monospace',
+        font='Arial',
         alignText='center'
     )
 
@@ -222,7 +222,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     outcomes = []
     if action_type == 'approach':
         for pos in positions:
-            star = draw_star(win, pos, size=10, color=[249, 244, 245])
+            star = draw_star(win, pos, size=10, color=[255, 255, 255])
             outcomes.append(star)
 
     # AVOID BLOCK - METEORS
@@ -230,7 +230,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         spaceship.ori = 180  # rotate the spaceship to face away from the meteors
         spaceship.pos = (0, -18)  # reposition the spaceship to accommodate the rotation
         for pos in positions:
-            meteor = draw_meteor(win, pos, size=10, color=[249, 244, 245])
+            meteor = draw_meteor(win, pos, size=10, color=[255, 255, 255])
             outcomes.append(meteor)
 
     return spaceship, outline, target, effort_text, outcomes
@@ -342,7 +342,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         pos=(0, 80),
         color='white',
         bold=True,
-        font='Monospace',
+        font='Arial',
         alignText='center',
         wrapWidth=800,
     )
@@ -392,7 +392,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         pos=(0, 80),
         color='white',
         bold=True,
-        font='Monospace',
+        font='Arial',
         alignText='center',
         wrapWidth=800
     )
@@ -429,7 +429,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     core.wait(gv['outcome_presentation_time'])  # Hold the final frame for a few seconds
 
 
-def get_rating(win, mouse, attention_focus):
+def get_rating(win, mouse, attention_focus, image):
     """
     Get a rating for heart rate of reward rate from the participant using a slider.
     """
@@ -437,13 +437,13 @@ def get_rating(win, mouse, attention_focus):
                            ticks=(1, 2, 3),
                            labels=["Low", "", "High"],
                            pos=(0, -20),
-                           size=(500, 70), units="pix", flip=True, style='slider', granularity=0, labelHeight=25)
+                           size=(500, 70), units="pix", flip=True, style='slider', granularity=0, labelHeight=35)
     slider.tickLines.sizes = (1, 70)
 
     slider_marker = visual.ShapeStim(
         win=win,
         vertices=((0, -35), (0, 35)),
-        lineWidth=16,
+        lineWidth=13,
         pos=(0, 0),
         closeShape=False,
         lineColor=convert_rgb_to_psychopy([250, 243, 62]),
@@ -451,15 +451,17 @@ def get_rating(win, mouse, attention_focus):
 
     slider_question_text = visual.TextStim(
         win,
-        text=f'Considering your recent {attention_focus} rate, how does it compare to your average {attention_focus} rate during the experiment?',
-        height=35,
-        pos=(0, 190),
+        text=f'How is your current {attention_focus} rate?',
+        height=40,
+        pos=(0, 200),
         color='white',
         bold=True,
-        font='Monospace',
+        font='Arial',
         alignText='center',
-        wrapWidth=600
+        wrapWidth=1000
     )
+
+    image.pos = [0, 120]
 
     while not slider.rating:
         # restrict slider marker to the range of slider
@@ -472,6 +474,7 @@ def get_rating(win, mouse, attention_focus):
         slider.draw()
         slider_question_text.draw()
         slider_marker.draw()
+        image.draw()
         win.flip()
 
     rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]

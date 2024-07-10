@@ -295,7 +295,7 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
         dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
         draw_all_stimuli(win, stimuli)
 
-        if effort_expended > trial_effort:
+        if effort_expended > (0.95*trial_effort):
             if not threshold_crossed:
                 EEG_config.send_trigger(EEG_config.triggers['effort_threshold_crossed'])
                 threshold_crossed = True
@@ -396,6 +396,8 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         alignText='center',
         wrapWidth=800
     )
+    if points < 0:
+        points_text.text = f'- {abs(points)} POINTS'
     if gv['training']:
         if result == 'failure':
             points_text.text = f'You failed to exert the required effort! \n\n{points} POINTS'
@@ -480,4 +482,29 @@ def get_rating(win, mouse, attention_focus, image):
     rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
     core.wait(0.5)
     return rating
+
+
+def calculate_bonus_payment(info, gv):
+    """
+    Calculate the bonus payment based on the points earned in randomly selected trials.
+    """
+    # Separate trials into approach and avoid blocks
+    approach_trials = [trial for trial in info if trial['block_action_type'] == 'approach']
+    avoid_trials = [trial for trial in info if trial['block_action_type'] == 'avoid']
+
+    # Randomly select 5 trials from each block type
+    selected_approach_trials = random.sample(approach_trials, 5)
+    selected_avoid_trials = random.sample(avoid_trials, 5)
+
+    # Sum up the points from the selected trials
+    total_points = sum(trial['points'] for trial in selected_approach_trials + selected_avoid_trials)
+
+    # Calculate the total bonus based on points
+    points_per_penny = 0.10  # Each point is worth 10 pennies
+    bonus_from_points = total_points * points_per_penny
+
+    # Calculate the final payment
+    final_payment = gv['base_bonus_payment'] + bonus_from_points
+
+    return final_payment
 

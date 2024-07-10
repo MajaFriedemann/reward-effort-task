@@ -370,7 +370,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         update_position([spaceship, outline, target], move_delta)
         flame.pos = (spaceship.pos[0], spaceship.pos[1] + flame_delta[1])
         stimuli = [spaceship, outline, target, flame] + outcomes
-        draw_all_stimuli(win, stimuli, 0.01)
+        draw_all_stimuli(win, stimuli, 0.008)
 
     draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
@@ -415,7 +415,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
                     outcome.pos[1] - (frame / frames) * 50
                 )
         stimuli = [spaceship, outline, target] + outcomes
-        draw_all_stimuli(win, stimuli, 0.01)
+        draw_all_stimuli(win, stimuli, 0.008)
 
     draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
@@ -435,6 +435,7 @@ def get_rating(win, mouse, attention_focus, image):
     """
     Get a rating for heart rate of reward rate from the participant using a slider.
     """
+    mouse.setPos(newPos=(0, 0))  # reset the mouse position to the middle of the slider
     slider = visual.Slider(win,
                            ticks=(1, 2, 3),
                            labels=["Low", "", "High"],
@@ -480,17 +481,22 @@ def get_rating(win, mouse, attention_focus, image):
         win.flip()
 
     rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
+    rating = round(rating, 3)
     core.wait(0.5)
     return rating
 
 
-def calculate_bonus_payment(info, gv):
+def calculate_bonus_payment(all_trials, gv):
     """
     Calculate the bonus payment based on the points earned in randomly selected trials.
     """
     # Separate trials into approach and avoid blocks
-    approach_trials = [trial for trial in info if trial['block_action_type'] == 'approach']
-    avoid_trials = [trial for trial in info if trial['block_action_type'] == 'avoid']
+    approach_trials = [trial for trial in all_trials if trial['block_action_type'] == 'approach']
+    avoid_trials = [trial for trial in all_trials if trial['block_action_type'] == 'avoid']
+
+    # Ensure there are at least 5 trials in each category
+    if len(approach_trials) < 5 or len(avoid_trials) < 5:
+        raise ValueError("Not enough trials in one or both categories to select 5 trials each.")
 
     # Randomly select 5 trials from each block type
     selected_approach_trials = random.sample(approach_trials, 5)
@@ -504,7 +510,7 @@ def calculate_bonus_payment(info, gv):
     bonus_from_points = total_points * points_per_penny
 
     # Calculate the final payment
-    final_payment = gv['base_bonus_payment'] + bonus_from_points
+    final_bonus_payment = gv['base_bonus_payment'] + bonus_from_points
 
-    return final_payment
+    return final_bonus_payment
 

@@ -24,7 +24,6 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-strength-pgACC-TUS_calibration'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'gripper hand (l/r)': '',
            'dummy (y/n)': 'n'}
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName) # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
 if not dlg.OK:
@@ -34,7 +33,6 @@ if not dlg.OK:
 info = dict(
     expName=expName,
     curec_ID=curecID,
-    session_nr=0,
     date=data.getDateStr(),
     participant=expInfo['participant nr'],
 
@@ -52,7 +50,7 @@ info = dict(
 log_vars = list(info.keys())
 if not os.path.exists('calibration_data'):
     os.mkdir('calibration_data')
-filename = os.path.join('calibration_data', '%s_%s_%s' % (info['participant'], info['session_nr'], info['date']))
+filename = os.path.join('calibration_data', '%s_%s' % (info['participant'], info['date']))
 datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()

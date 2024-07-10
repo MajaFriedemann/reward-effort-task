@@ -75,7 +75,7 @@ if not DUMMY:
 win = visual.Window(
     size=[1920, 1080],  # set correct monitor size
     fullscr=True,  # fullscreen mode
-    screen=0,  # adjust if using multiple monitors
+    screen=1,  # adjust if using multiple monitors
     allowGUI=False,
     color='black',
     blendMode='avg',

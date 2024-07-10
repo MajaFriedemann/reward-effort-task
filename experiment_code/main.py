@@ -331,14 +331,14 @@ else:
 
     # Monetary reward
     instructions_txt.text = (
-        "You start your adventure with a base reward of £5.\n"
+        f"You start your adventure with a base reward of £{gv['base_bonus_payment']}.\n"
         "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds, 5 meteor fields), and "
         "your choices and performance in these encounters will adjust your final reward.\n\n"
         "Each point is worth 10p. For example, if an encounter where you accepted the "
         f"mission and collected an 80-point star cloud is chosen, you'll earn £{gv['base_bonus_payment']}. "
         f"If however you rejected that encounter or failed that mission, "
         "you'll earn nothing. Similarly, if an encounter where you accepted the mission and evaded an 80-point meteor field is chosen, "
-        "nothing will be subtracted from your base reward. If however you rejected that encounter or failed that mission, you'll lose £8."
+        f"nothing will be subtracted from your base reward. If however you rejected that encounter or failed that mission, you'll lose £{gv['base_bonus_payment']}."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -404,7 +404,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     ##########################################################################################
     ################################## FOR TESTING ###########################################
     ##########################################################################################
-    # rating_trial = "TRUE"
+    # rating_trial = "True"
     # action_type = 'approach'
     # attention_focus = 'heart'
     # effort_state = 'shifted'
@@ -493,7 +493,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
                                      EEG_config, gv)
 
     # check if we are in a rating trial
-    if rating_trial == "TRUE":
+    if rating_trial == "True":
         if attention_focus == "reward":
             EEG_config.send_trigger(EEG_config.triggers['rating_question_reward'])
             rating = hf.get_rating(win, mouse, attention_focus, reward_rate_stimulus)

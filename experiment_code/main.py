@@ -33,9 +33,9 @@ expInfo = {'participant nr': '999',
            'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
            'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
-           'session nr': '1',  # 0 for training session
-           'age': '28',
-           'gender (f/m/o)': 'f',
+           'session nr': '1',  # 0 for training session, then 1, 2, 3
+           'age': '',
+           'gender (f/m/o)': '',
            }
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
 if not dlg.OK:
@@ -59,8 +59,8 @@ gv = dict(
     # task parameters
     max_strength=max_strength,
     gripper_zero_baseline=None,
-    effort_duration=1,  # second duration for which the effort needs to be above threshold
-    time_limit=5,  # time limit for exerting the effort
+    effort_duration=1,  # second duration for which the effort needs to be above threshold 1
+    time_limit=5,  # time limit for exerting the effort 5
     outcome_presentation_time=1.5,  # time for which the outcome is presented
     effort_started_threshold=0.1,  # threshold to consider effort exertion started for EEG trigger
     net_value_shift=15,  # shift in net value for shifted effort state
@@ -176,7 +176,7 @@ win = visual.Window(
     size=[1512, 982],  # set to actual screen size
     fullscr=True,  # full-screen mode
     screen=1,
-    allowGUI=False,
+    allowGUI=True,
     color='black',
     blendMode='avg',
     useFBO=True,  # Frame Buffer Object for rendering (good for complex stimuli)
@@ -292,7 +292,7 @@ win.flip()
 core.wait(0.6)
 
 if gv['training']:
-    ti.instructions_2(win, green_button, button_txt, instructions_txt, instructions_top_txt, big_txt, mouse, gv)
+    ti.instructions_2(win, green_button, button_txt, instructions_txt, instructions_top_txt, big_txt, heart_rate_stimulus, reward_rate_stimulus, mouse, gv)
 else:
     # Task overview
     instructions_txt.text = (
@@ -340,10 +340,10 @@ else:
         "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds, 5 meteor fields), and "
         "your choices and performance in these encounters will adjust your final reward.\n\n"
         "Each point is worth 10p. For example, if an encounter where you accepted the "
-        f"mission and collected an 80-point star cloud is chosen, you'll earn £{gv['base_bonus_payment']}. "
+        f"mission and collected an 80-point star cloud is chosen, you'll earn £8. "
         f"If however you rejected that encounter or failed that mission, "
         "you'll earn nothing. Similarly, if an encounter where you accepted the mission and evaded an 80-point meteor field is chosen, "
-        f"nothing will be subtracted from your base reward. If however you rejected that encounter or failed that mission, you'll lose £{gv['base_bonus_payment']}."
+        f"nothing will be subtracted from your base reward. If however you rejected that encounter or failed that mission, you'll lose £8."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -370,7 +370,7 @@ else:
     big_txt.text = "Grab the hand gripper to prepare for launch!\n"
     big_txt.draw()
     win.flip()
-    core.wait(1)
+    core.wait(2)
 
 ###################################
 # TASK
@@ -411,7 +411,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     ##########################################################################################
     ################################## FOR TESTING ###########################################
     ##########################################################################################
-    rating_trial = "True"
+    # rating_trial = "True"
     # action_type = 'approach'
     # attention_focus = 'heart'
     # effort_state = 'shifted'
@@ -468,7 +468,8 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     if clicked_button == upper_button:
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
-        stimuli = [spaceship, outline, target, effort_text, outcomes]
+        # stimuli = [spaceship, outline, target, effort_text, outcomes]
+        stimuli = [spaceship, outline, target, outcomes]
         result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli,
                                                                              trial_effort, target, gv, EEG_config,
                                                                              effort_state)
@@ -497,7 +498,6 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
             points = 0
         elif action_type == 'avoid':
             points = trial_actual_outcome
-        start_time = time.time()  # Record start time
         hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, response,
                                      EEG_config, gv)
 
@@ -539,22 +539,30 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
 
 
 # End of experiment
-final_bonus_payment = hf.calculate_bonus_payment(all_trials, gv)
-info['final_bonus_payment'] = final_bonus_payment
-print(f"Final bonus payment: £{final_bonus_payment: .2f}")
 end_time = datetime.now()
 info['end_time'] = end_time.strftime("%Y-%m-%d %H:%M:%S")
 duration = end_time - start_time
 info['duration'] = str(duration)
+
+big_txt.pos = [0, 200]
+if gv['training']:
+    big_txt.text = "Well done! \n\nYou have completed the training session."
+    instructions_txt.text = " "
+else:
+    final_bonus_payment = hf.calculate_bonus_payment(all_trials, gv)
+    info['final_bonus_payment'] = final_bonus_payment
+    print(f"Final bonus payment: £{final_bonus_payment: .2f}")
+    big_txt.text = "Well done! You have completed the task."
+    instructions_txt.text = f"\n\n\n\n\n\nYour bonus payment is £{final_bonus_payment: .2f}!"
+
 datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
 datafile.flush()
-big_txt.pos = [0, 200]
-big_txt.text = "Well done! You have completed the task."
-instructions_txt.text = f"\n\n\n\n\n\nYour bonus payment is £{final_bonus_payment: .2f}!"
+
 stimuli = [big_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
 EEG_config.send_trigger(EEG_config.triggers['experiment_end'])
-core.wait(10)
+hf.exit_q(win, mouse)
+core.wait(8)
 
 # CLOSE WINDOW
 datafile.close()

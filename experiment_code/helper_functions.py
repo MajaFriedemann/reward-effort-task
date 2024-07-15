@@ -337,7 +337,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text=f'+{points} POINTS' if action_type == 'approach' else f'{points} POINTS',
+        text=f'+ {points} POINTS' if action_type == 'approach' else f'{points} POINTS',
         height=60,
         pos=(0, 80),
         color='white',
@@ -349,9 +349,9 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
 
     if gv['training']:
         if action_type == 'approach':
-            points_text.text = f'Great! You reached the stars! \n\n{points} POINTS WIN!'
+            points_text.text = f'+ {points} POINTS \n\nYou reached the stars!'
         if action_type == 'avoid':
-            points_text.text = f'Great! You evaded the meteors! \n\n{points} POINTS LOST!'
+            points_text.text = f'{points} POINTS \n\nYou evaded the meteors!'
     else:
         pass
 
@@ -378,6 +378,8 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     elif action_type == 'avoid':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_success'])
     core.wait(gv['outcome_presentation_time'])  # Hold the final frame for a few seconds
+    if gv['training']:
+        core.wait(2)
 
 
 def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv):
@@ -400,9 +402,13 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         points_text.text = f'- {abs(points)} POINTS'
     if gv['training']:
         if result == 'failure':
-            points_text.text = f'You failed to exert the required effort! \n\n{points} POINTS'
+            points_text.text = f'{points} POINTS \n\nYou failed to exert the required effort!'
+            if points < 0:
+                points_text.text = f'- {abs(points)} POINTS \n\nYou failed to exert the required effort!'
         if result == 'reject':
-            points_text.text = f'You rejected the offer! \n\n{points} POINTS'
+            points_text.text = f'{points} POINTS \n\nYou rejected the offer!'
+            if points < 0:
+                points_text.text = f'- {abs(points)} POINTS \n\nYou rejected the offer!'
     else:
         pass
 
@@ -429,6 +435,8 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         elif result == 'reject':
             EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_reject'])
     core.wait(gv['outcome_presentation_time'])  # Hold the final frame for a few seconds
+    if gv['training']:
+        core.wait(2)
 
 
 def get_rating(win, mouse, attention_focus, image):

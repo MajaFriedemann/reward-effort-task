@@ -24,8 +24,9 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-strength-pgACC-TUS_calibration'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '999',
-           'dummy (y/n)': 'n'}
-dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName) # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
+           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
+           }
+dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)  # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
 if not dlg.OK:
     core.quit()  # pressed cancel on the pop-up window
 
@@ -59,7 +60,7 @@ datafile.flush()
 ###################################
 # HAND GRIPPER
 ###################################
-DUMMY = expInfo['dummy (y/n)'].lower() == 'y'
+DUMMY = expInfo['grippers (y/n)'].lower() == 'n'
 gripper = None
 if not DUMMY:
     from mpydev import BioPac
@@ -227,7 +228,7 @@ datafile.flush()
 
 
 # THANK YOU
-big_txt.text = 'Well done!\n\nYour grip strength test is completed.'
+big_txt.text = 'Your grip strength test is completed.'
 hf.draw_all_stimuli(win,[big_txt], 8)
 
 

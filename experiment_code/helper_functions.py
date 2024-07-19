@@ -337,7 +337,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text=f'+ {points} POINTS' if action_type == 'approach' else f'{points} POINTS',
+        text=f'+ {points}' if action_type == 'approach' else f'{points}',
         height=60,
         pos=(0, 80),
         color='white',
@@ -389,7 +389,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
     frames = 30  # Number of frames for the animation
     points_text = visual.TextStim(
         win,
-        text=f'{points} POINTS',
+        text=f'{points}',
         height=60,
         pos=(0, 80),
         color='white',
@@ -399,7 +399,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         wrapWidth=800
     )
     if points < 0:
-        points_text.text = f'- {abs(points)} POINTS'
+        points_text.text = f'- {abs(points)}'
     if gv['training']:
         if result == 'failure':
             points_text.text = f'{points} POINTS \n\nYou failed to exert the required effort!'
@@ -514,7 +514,7 @@ def calculate_bonus_payment(all_trials, gv):
     total_points = sum(trial['points'] for trial in selected_approach_trials + selected_avoid_trials)
 
     # Calculate the total bonus based on points
-    points_per_penny = 0.10  # Each point is worth 10 pennies
+    points_per_penny = 0.01  # Each point is worth 1 penny
     bonus_from_points = total_points * points_per_penny
 
     # Calculate the final payment

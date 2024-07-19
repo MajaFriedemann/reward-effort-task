@@ -74,7 +74,7 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
         f"In the real task, you will start your adventure with a base reward.\n"
         "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds, 5 meteor fields), and "
         "your choices and performance in these encounters will adjust your final reward."
-        "Each point is worth 10p."
+        "Each point is worth 1p."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -122,8 +122,7 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
         ("What do more meteors indicate?", ["Higher potential reward", "Greater potential loss", "Easier mission"],
          button_2),
         ("What happens if you fail to exert the required effort during an approach encounter?",
-         ["No reward is given", "You still get a reward", "You lose points"], button_1),
-        ("How much is each point worth?", ["5p", "10p", "20p"], button_2)
+         ["No reward is given", "You still get a reward", "You lose points"], button_1)
     ]
 
     incorrect_questions = []

@@ -47,11 +47,11 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
     instructions_txt.text = (
         "There are two types of encounters:\n\n"
         "1. In approach encounters, you'll face clouds of stars. More stars mean higher potential rewards. "
-        "If you choose to accept the encounter, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
-        "Rejecting the encounter or failing to exert the required effort during the mission results in no reward.\n\n"
+        "If you choose to accept the encounter with a left-click, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in no reward.\n\n"
         "2. In avoid encounters, you'll face meteor fields. More meteors indicate a greater potential loss. "
-        "If you accept the encounter, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
-        "Rejecting the encounter or failing to exert the required effort during the mission results in a loss."
+        "If you accept the encounter with a left-click, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in a loss."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -59,7 +59,7 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
 
     # Effort
     instructions_txt.text = (
-        f"When you accept an encounter, squeeze the gripper to power your spaceship. "
+        f"When you accept an encounter with a left-click, squeeze the gripper to power your spaceship. "
         f"Your goal is to reach the target power level as quickly as possible. "
         f"Once at target, maintain the power for 1 second until your spaceship starts moving. "
         f"You have {gv['time_limit']} seconds for each mission attempt. Therefore, starting too slow may result in mission failure.\n\n"
@@ -74,7 +74,6 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
         f"In the real task, you will start your adventure with a base reward.\n"
         "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds, 5 meteor fields), and "
         "your choices and performance in these encounters will adjust your final reward."
-        "Each point is worth 1p."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -91,6 +90,15 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
                                        height=instructions_txt.height)
     stimuli = [green_button, button_txt, instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus,
                reward_rate_stimulus]
+    hf.draw_all_stimuli(win, stimuli)
+    hf.check_button(win, [green_button], stimuli, mouse)
+
+    instructions_txt.text = (
+        "An icon in the top right corner of the screen will act as a cue, reminding you whether you are currently tracking your reward or heart rate.\n\n"
+        "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high reward rate.\n"
+        "Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
+    )
+    stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
     hf.check_button(win, [green_button], stimuli, mouse)
 
@@ -122,7 +130,8 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
         ("What do more meteors indicate?", ["Higher potential reward", "Greater potential loss", "Easier mission"],
          button_2),
         ("What happens if you fail to exert the required effort during an approach encounter?",
-         ["No reward is given", "You still get a reward", "You lose points"], button_1)
+         ["No reward is given", "You still get a reward", "You lose points"], button_1),
+        ("How do you reject an encounter?", ["Left-click", "Right-click", "Double-click"], button_2)
     ]
 
     incorrect_questions = []

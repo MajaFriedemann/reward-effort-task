@@ -161,9 +161,10 @@ info = dict(
 
 # start a csv file for saving the participant data
 log_vars = list(info.keys())
-if not os.path.exists('data'):
-    os.mkdir('data')
-filename = os.path.join('data', '%s_%s_%s' % (info['participant'], info['session_nr'], info['date']))
+folder = 'training_data' if gv.get('training') else 'data'
+if not os.path.exists(folder):
+    os.mkdir(folder)
+filename = os.path.join(folder, '%s_%s_%s' % (info['participant'], info['session_nr'], info['date']))
 datafile = open(filename + '.csv', 'w')
 datafile.write(','.join(log_vars) + '\n')
 datafile.flush()
@@ -247,6 +248,12 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
                                    font='Arial')
 heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 144), size=(65, 65))
 reward_rate_stimulus = visual.ImageStim(win, image="pictures/money.png", pos=(280, 80), size=(65, 65))
+heart_cue = visual.ImageStim(win, image="pictures/heart.png", pos=(630, 400), size=(65, 65))
+reward_cue = visual.ImageStim(win, image="pictures/money.png", pos=heart_cue.pos, size=(65, 65))
+accept_txt = visual.TextStim(win=win, text='A', height=30, pos=(-35, -300), color='white', bold=True, font='Arial')
+oval_accept = visual.Circle(win=win, radius=24, pos=accept_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
+reject_txt = visual.TextStim(win=win, text='R', height=30, pos=(35, -300), color='white', bold=True, font='Arial')
+oval_reject = visual.Circle(win=win, radius=24, pos=reject_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
 
 ###################################
 # INSTRUCTIONS
@@ -311,11 +318,11 @@ else:
     instructions_txt.text = (
         "There are two types of encounters:\n\n"
         "1. In approach encounters, you'll face clouds of stars. More stars mean higher potential rewards. "
-        "If you choose to accept the encounter, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
-        "Rejecting the encounter or failing to exert the required effort during the mission results in no reward.\n\n"
+        "If you choose to accept the encounter with a left-click, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in no reward.\n\n"
         "2. In avoid encounters, you'll face meteor fields. More meteors indicate a greater potential loss. "
-        "If you accept the encounter, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
-        "Rejecting the encounter or failing to exert the required effort during the mission results in a loss."
+        "If you accept the encounter with a left-click, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in a loss."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -323,7 +330,7 @@ else:
 
     # Effort
     instructions_txt.text = (
-        f"When you accept an encounter, squeeze the gripper to power your spaceship. "
+        f"When you accept an encounter with a left-click, squeeze the gripper to power your spaceship. "
         f"Your goal is to reach the target power level as quickly as possible. "
         f"Once at target, maintain the power for 1 second until your spaceship starts moving. "
         f"You have {gv['time_limit']} seconds for each mission attempt. Therefore, starting too slow may result in mission failure.\n\n"
@@ -337,13 +344,12 @@ else:
     # Monetary reward
     instructions_txt.text = (
         f"You start your adventure with a base reward of £{gv['base_bonus_payment']}.\n"
-        "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds, 5 meteor fields), and "
-        "your choices and performance in these encounters will adjust your final reward.\n\n"
-        "Each point is worth 1p. For example, if an encounter where you accepted the "
-        f"mission and collected an 80-point star cloud is chosen, you'll earn 80p. "
-        f"If however you rejected that encounter or failed that mission, "
-        "you'll earn nothing. Similarly, if an encounter where you accepted the mission and evaded an 80-point meteor field is chosen, "
-        f"nothing will be subtracted from your base reward. If however you rejected that encounter or failed that mission, you'll lose 80p."
+        "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds and 5 meteor fields). "
+        "Your choices and performance in these encounters will adjust your final reward.\n\n"
+        "Each point is worth 1p. For example, if an encounter where you accepted the mission and collected an 80-point star cloud is chosen, you'll earn 80p. "
+        "However, if you rejected that encounter or failed the mission, you'll earn nothing. "
+        "Similarly, if an encounter where you accepted the mission and successfully evaded an 80-point meteor field is chosen, nothing will be subtracted from your base reward. "
+        "But if you rejected that encounter or failed the mission, you'll lose 80p."
     )
     stimuli = [green_button, button_txt, instructions_txt]
     hf.draw_all_stimuli(win, stimuli)
@@ -363,14 +369,23 @@ else:
     hf.draw_all_stimuli(win, stimuli)
     hf.check_button(win, [green_button], stimuli, mouse)
 
-    # MAJA - some screen here for the TUS part
+    instructions_txt.text = (
+        "An icon in the top right corner of the screen will act as a cue, reminding you whether you are currently tracking your reward or heart rate.\n\n"
+        "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high reward rate.\n"
+        "Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
+    )
+    stimuli = [green_button, button_txt, instructions_txt]
+    hf.draw_all_stimuli(win, stimuli)
+    hf.check_button(win, [green_button], stimuli, mouse)
 
     # Start
     win.flip()
     big_txt.text = "Grab the hand gripper to prepare for launch!\n"
-    big_txt.draw()
-    win.flip()
-    core.wait(2)
+    stimuli = [green_button, button_txt, big_txt]
+    hf.draw_all_stimuli(win, stimuli)
+    hf.check_button(win, [green_button], stimuli, mouse)
+
+    # MAJA - some break point / button to be pressed to begin here for the TUS part
 
 ###################################
 # TASK
@@ -434,9 +449,11 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         if attention_focus == 'reward':
             reward_rate_stimulus.pos = [550, 60]
             image = reward_rate_stimulus
+            cue = reward_cue
         elif attention_focus == 'heart':
             heart_rate_stimulus.pos = [530, 60]
             image = heart_rate_stimulus
+            cue = heart_cue
         instructions_txt.text = (
             f"This is block {current_block} of {max(gv['block_number'])}\n\n"
             f"Your mission is to {action_text}\n\n"
@@ -448,6 +465,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         hf.check_button(win, [green_button], stimuli, mouse)
         win.color = hf.convert_rgb_to_psychopy([0, 38, 82])  # set window color back to blue for trials
         button_txt.text = 'NEXT'  # reset button text
+        win.flip()
     else:
         pass
 
@@ -455,21 +473,23 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome_level,
                                                                               action_type, gv)
     # stimuli = [spaceship, outline, target, effort_text, outcomes, upper_button, upper_button_txt, lower_button,
-    #            lower_button_txt]  # with effort_text
-    stimuli = [spaceship, outline, target, outcomes, upper_button, upper_button_txt, lower_button, lower_button_txt]
+    #            lower_button_txt]  # with effort_text and accept / reject buttons
+    stimuli = [spaceship, outline, target, outcomes, oval_accept, accept_txt, oval_reject, reject_txt, cue]
     hf.draw_all_stimuli(win, stimuli)
     if action_type == 'approach':
         EEG_config.send_trigger(EEG_config.triggers['offer_presentation_approach'])
     elif action_type == 'avoid':
         EEG_config.send_trigger(EEG_config.triggers['offer_presentation_avoid'])
-    clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)
+    # clicked_button, response_time = hf.check_button(win, [upper_button, lower_button], stimuli, mouse)  # with accept / reject buttons
+    clicked_button, response_time = hf.check_mouse_click(win, mouse)
 
     # accept
-    if clicked_button == upper_button:
+    # if clicked_button == upper_button:  # with accept / reject buttons
+    if clicked_button == 'left':
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
         # stimuli = [spaceship, outline, target, effort_text, outcomes]
-        stimuli = [spaceship, outline, target, outcomes]
+        stimuli = [spaceship, outline, target, outcomes, cue]
         result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli,
                                                                              trial_effort, target, gv, EEG_config,
                                                                              effort_state)
@@ -479,7 +499,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
                 points = trial_actual_outcome
             elif action_type == 'avoid':
                 points = 0
-            hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv)
+            hf.animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv, cue)
         # failure
         elif result == 'failure':
             if action_type == 'approach':
@@ -487,10 +507,11 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
             elif action_type == 'avoid':
                 points = trial_actual_outcome
             hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result,
-                                         EEG_config, gv)
+                                         EEG_config, gv, cue)
 
     # reject
-    elif clicked_button == lower_button:
+    # elif clicked_button == lower_button:  # with accept / reject buttons
+    elif clicked_button == 'right':
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_reject'])
         response = 'reject'
         result, effort_trace, average_effort, effort_time = None, None, None, None
@@ -499,7 +520,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         elif action_type == 'avoid':
             points = trial_actual_outcome
         hf.animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, response,
-                                     EEG_config, gv)
+                                     EEG_config, gv, cue)
 
     # check if we are in a rating trial
     if rating_trial == "True":

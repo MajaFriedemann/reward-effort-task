@@ -83,6 +83,20 @@ def check_button(win, buttons, stimuli, mouse):
                     return button, response_time  # return the button that was clicked and the response time
         # flush the event queue to avoid stale events
         event.clearEvents()
+        mouse.clickReset()
+
+
+def check_mouse_click(win, mouse):
+    mouse.clickReset()
+    while True:
+        buttons, times = mouse.getPressed(getTime=True)
+        if buttons[0]:
+            return 'left', times[0]
+        if buttons[2]:
+            return 'right', times[2]
+        # Add a small delay to avoid high CPU usage
+        exit_q(win)
+        core.wait(0.01)
 
 
 def convert_rgb_to_psychopy(color, alpha=1.0):
@@ -177,7 +191,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     spaceship = visual.ImageStim(
         win,
         image='pictures/spaceship.png',
-        pos=(-2, -50),
+        pos=(-2, -125),
         size=(340, 300)
     )
 
@@ -186,7 +200,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         win,
         width=gv['effort_bar_width']+6,
         height=gv['effort_bar_height']+6,
-        pos=(0, -36),
+        pos=(0, -111),
         fillColor='black',
     )
 
@@ -196,7 +210,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         win,
         width=gv['effort_bar_width'],
         height=target_height,
-        pos=(0, -36 - (gv['effort_bar_height'] - target_height) / 2),
+        pos=(0, -111 - (gv['effort_bar_height'] - target_height) / 2),
         fillColor=convert_rgb_to_psychopy([250, 243, 62]),
     )
 
@@ -205,7 +219,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
         win,
         text=f'{trial_effort}% \nEFFORT',
         height=28,
-        pos=(200, -20),
+        pos=(200, -95),
         color='white',
         bold=True,
         font='Arial',
@@ -214,7 +228,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
 
     # STARS/METEORS
     x_range = (-250, 250)  # x-coordinate range for stars/meteors
-    y_range = (150, 455)  # y-coordinate range for stars/meteors
+    y_range = (75, 380)
     min_distance = 24  # Minimum distance between stars/meteors to avoid overlap
     positions = generate_random_positions(abs(trial_outcome), x_range, y_range, min_distance)
 
@@ -228,7 +242,7 @@ def draw_trial_stimuli(win, trial_effort, trial_outcome, action_type, gv):
     # AVOID BLOCK - METEORS
     elif action_type == 'avoid':
         spaceship.ori = 180  # rotate the spaceship to face away from the meteors
-        spaceship.pos = (0, -18)  # reposition the spaceship to accommodate the rotation
+        spaceship.pos = (0, -93)  # Reposition the spaceship to accommodate the rotation
         for pos in positions:
             meteor = draw_meteor(win, pos, size=10, color=[255, 255, 255])
             outcomes.append(meteor)
@@ -256,7 +270,7 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
         win,
         width=gv['effort_bar_width'],
         height=0,  # Start with a height of 0
-        pos=(0, -106),  # Position at the bottom of the outline
+        pos=(0, -181),  # Position at the bottom of the outline
         fillColor=convert_rgb_to_psychopy([243, 88, 19], alpha=0.7)
     )
     stimuli.append(target)
@@ -292,7 +306,7 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
 
         dynamic_height = min(max(0, effort_expended), 100) * (138 / 100)
         dynamic_bar.height = dynamic_height
-        dynamic_bar.pos = (0, -106 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
+        dynamic_bar.pos = (0, -181 + (dynamic_height / 2))  # Adjust position to ensure bottom alignment
         draw_all_stimuli(win, stimuli)
 
         if effort_expended > (0.95*trial_effort):
@@ -330,7 +344,7 @@ def update_position(stimuli, delta_pos):
         stim.pos += delta_pos
 
 
-def animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv):
+def animate_success(win, spaceship, outcomes, target, outline, points, action_type, EEG_config, gv, cue):
     """
     Animate the success outcome for either approach or avoid blocks, including displaying points.
     """
@@ -369,10 +383,10 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     for frame in range(frames):
         update_position([spaceship, outline, target], move_delta)
         flame.pos = (spaceship.pos[0], spaceship.pos[1] + flame_delta[1])
-        stimuli = [spaceship, outline, target, flame] + outcomes
+        stimuli = [spaceship, outline, target, flame, cue] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text])
+    draw_all_stimuli(win, [points_text, cue])
     if action_type == 'approach':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_success'])
     elif action_type == 'avoid':
@@ -382,7 +396,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         core.wait(2)
 
 
-def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv):
+def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv, cue):
     """
     Animate the failure outcome for either approach or avoid blocks, showing negative consequences.
     """
@@ -420,10 +434,10 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
                     outcome.pos[0],
                     outcome.pos[1] - (frame / frames) * 50
                 )
-        stimuli = [spaceship, outline, target] + outcomes
+        stimuli = [spaceship, outline, target, cue] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text])
+    draw_all_stimuli(win, [points_text, cue])
     if action_type == 'approach':
         if result == 'failure':
             EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_failure'])

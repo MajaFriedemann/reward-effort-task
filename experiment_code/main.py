@@ -1,6 +1,7 @@
 """
 script for the main task (use the gripper labelled as LEFT)
 if using the hand-gripper (rather than DUMMY version), run gripper_calibration.py once before this (only before the first session)
+if trial schedule is set to 'training', the participant is in the training session
 to determine the participant's max grip strength
 with 'strength' I refer to raw grip strength
 with 'effort' I refer to grip strength relative to the participant's max strength (as determined with gripper_calibration.py)

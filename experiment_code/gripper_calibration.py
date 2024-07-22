@@ -2,7 +2,7 @@
 script for calibrating the hand gripper (gripper labeled as LEFT)
 will automatically start the training session after calibration is done
 needs to be run before main.py
-for the pgACC TUS study probably best to do this on the structural scan day alongside calibrating the dot motion stimulus for the confidence task?
+for the pgACC TUS study probably best to do this on the structural scan day alongside the training session and calibrating the dot motion stimulus for the confidence task?
 
 Maja Friedemann 2024
 """

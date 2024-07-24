@@ -23,8 +23,8 @@ print('Reminder: Press Q to quit.')
 ###################################
 expName = 'reward-strength-pgACC-TUS_calibration'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '999',
-           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
+expInfo = {'participant nr': '2',
+           'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
            }
 dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)  # pop-up window asking for participant number and which hand they will use for the gripper (they need to be happy to use the respective other hand for the keyboard)
 if not dlg.OK:

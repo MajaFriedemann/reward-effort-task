@@ -30,11 +30,11 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '999',
-           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
-           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
+expInfo = {'participant nr': '2',
+           'trial schedule': 'B_4',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
+           'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
-           'session nr': '1',  # 0 for training session, then 1, 2, 3
+           'session nr': '0',  # 0 for training session, then 1, 2, 3
            'age': '',
            'gender (f/m/o)': '',
            }
@@ -386,7 +386,7 @@ else:
     hf.draw_all_stimuli(win, stimuli)
     hf.check_button(win, [green_button], stimuli, mouse)
 
-    # MAJA - some break point / button to be pressed to begin here for the TUS part
+    # MAJA - some break point here so that the actual task only starts after TUS has been completed
 
 ###################################
 # TASK

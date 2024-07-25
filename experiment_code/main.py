@@ -30,8 +30,8 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '2',
-           'trial schedule': 'B_4',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
+expInfo = {'participant nr': '3',
+           'trial schedule': 'training',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
            'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '0',  # 0 for training session, then 1, 2, 3
@@ -54,6 +54,7 @@ if max_strength is None:
     print('Max strength calibration file for participant not found.')
 else:
     print(max_strength)
+#  max_strength = 0.9 * max_strength  # MAJA
 
 # TASK VARIABLES
 gv = dict(

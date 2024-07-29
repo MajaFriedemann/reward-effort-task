@@ -54,7 +54,7 @@ if max_strength is None:
     print('Max strength calibration file for participant not found.')
 else:
     print(max_strength)
-#  max_strength = 0.9 * max_strength  # MAJA
+max_strength = 0.9 * max_strength  # MAJA
 
 # TASK VARIABLES
 gv = dict(

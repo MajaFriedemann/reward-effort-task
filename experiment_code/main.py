@@ -578,7 +578,14 @@ else:
     big_txt.text = "Well done! You have completed the task."
     instructions_txt.text = f"\n\n\n\n\n\nYour bonus payment is £{final_bonus_payment: .2f}!"
 
-datafile.write(','.join([str(info[var]) for var in log_vars]) + '\n')
+# Update the last trial with end time, duration, and bonus payment
+if all_trials:
+    all_trials[-1]['end_time'] = info['end_time']
+    all_trials[-1]['duration'] = info['duration']
+    all_trials[-1]['final_bonus_payment'] = info['final_bonus_payment']
+
+# Save the final updated trial data to the file
+datafile.write(','.join([str(all_trials[-1][var]) for var in log_vars]) + '\n')
 datafile.flush()
 
 stimuli = [big_txt, instructions_txt]

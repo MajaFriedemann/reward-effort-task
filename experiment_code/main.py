@@ -560,7 +560,6 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # append a copy of the current trial info to the all_trials list
     all_trials.append(info.copy())
 
-
 # End of experiment
 end_time = datetime.now()
 info['end_time'] = end_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -584,10 +583,23 @@ if all_trials:
     all_trials[-1]['duration'] = info['duration']
     all_trials[-1]['final_bonus_payment'] = info['final_bonus_payment']
 
-# Save the final updated trial data to the file
-datafile.write(','.join([str(all_trials[-1][var]) for var in log_vars]) + '\n')
-datafile.flush()
+    # Close the file before reopening it in read/write mode
+    datafile.close()
 
+    # Reopen the file in read/write mode
+    with open(filename + '.csv', 'r+') as datafile:
+        # Read the current content of the file
+        lines = datafile.readlines()
+
+        # Replace the last line with the updated trial info
+        lines[-1] = ','.join([str(all_trials[-1][var]) for var in log_vars]) + '\n'
+
+        # Write back the modified content
+        datafile.seek(0)
+        datafile.writelines(lines)
+        datafile.flush()
+
+datafile.close()
 stimuli = [big_txt, instructions_txt]
 hf.draw_all_stimuli(win, stimuli)
 EEG_config.send_trigger(EEG_config.triggers['experiment_end'])
@@ -595,6 +607,5 @@ hf.exit_q(win, mouse)
 core.wait(8)
 
 # CLOSE WINDOW
-datafile.close()
 win.close()
 core.quit()

@@ -129,6 +129,7 @@ def instructions_2(win, green_button, button_txt, instructions_txt, instructions
     big_txt.pos = [0, 150]
     instructions_txt.text = (
         "Let's make sure you're ready! \n\nAnswer the following questions \nto show you know how the task works."
+        "\n\n Respond with the number of the correct answer (1, 2, or 3). \n\n\n\nPress SPACE to start."
     )
     instructions_txt.draw()
     win.flip()

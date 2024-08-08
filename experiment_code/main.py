@@ -32,7 +32,7 @@ expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '6',
            'trial schedule': 'B_3',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
-           'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
+           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '1',  # 0 for training session, then 1, 2, 3
            'age': '',
@@ -59,7 +59,6 @@ max_strength = 0.9 * max_strength  # MAJA
 # TASK VARIABLES
 gv = dict(
     # task parameters
-    sequential_offer_presentation=True,
     max_strength=max_strength,
     gripper_zero_baseline=None,
     effort_duration=1,  # second duration for which the effort needs to be above threshold 1
@@ -206,27 +205,25 @@ if not DUMMY:
 triggers = dict(
     experiment_start=1,
     block_start=2,
-    offer_presentation_approach=3,  # for simultaneous offer presentation
-    offer_presentation_avoid=4,  # for simultaneous offer presentation
-    effort_presentation_approach=5,  # for sequential offer presentation
-    effort_presentation_avoid=6,  # for sequential offer presentation
-    outcome_presentation_approach=7,  # for sequential offer presentation
-    outcome_presentation_avoid=8,  # for sequential offer presentation
-    participant_choice_accept=9,
-    participant_choice_reject=10,
-    rating_question_reward=11,
-    rating_question_heart=12,
-    rating_response_reward=13,
-    rating_response_heart=14,
-    effort_started=15,
-    effort_threshold_crossed=16,
-    effort_success=17,
-    outcome_presentation_approach_success=18,
-    outcome_presentation_approach_failure=19,
-    outcome_presentation_approach_reject=20,
-    outcome_presentation_avoid_success=20,
-    outcome_presentation_avoid_failure=21,
-    outcome_presentation_avoid_reject=22,
+    effort_presentation_approach=3,
+    effort_presentation_avoid=4,
+    outcome_presentation_approach=5,
+    outcome_presentation_avoid=6,
+    participant_choice_accept=7,
+    participant_choice_reject=8,
+    rating_question_reward=9,
+    rating_question_heart=10,
+    rating_response_reward=11,
+    rating_response_heart=12,
+    effort_started=13,
+    effort_threshold_crossed=14,
+    effort_success=15,
+    outcome_presentation_approach_success=16,
+    outcome_presentation_approach_failure=17,
+    outcome_presentation_approach_reject=18,
+    outcome_presentation_avoid_success=19,
+    outcome_presentation_avoid_failure=20,
+    outcome_presentation_avoid_reject=21,
     experiment_end=22
 )
 # Create an EEGConfig object
@@ -255,7 +252,7 @@ lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_
                                    font='Arial')
 heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 144), size=(65, 65))
 reward_rate_stimulus = visual.ImageStim(win, image="pictures/money.png", pos=(280, 80), size=(65, 65))
-heart_cue = visual.ImageStim(win, image="pictures/heart.png", pos=(630, 400), size=(65, 65))
+heart_cue = visual.ImageStim(win, image="pictures/heart.png", pos=(0, 0), size=(65, 65))
 reward_cue = visual.ImageStim(win, image="pictures/money.png", pos=heart_cue.pos, size=(65, 65))
 accept_txt = visual.TextStim(win=win, text='A', height=30, pos=(-35, -300), color='white', bold=True, font='Arial')
 oval_accept = visual.Circle(win=win, radius=24, pos=accept_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
@@ -480,45 +477,35 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # draw stimuli
     spaceship, outline, target, effort_text, outcomes = hf.draw_trial_stimuli(win, trial_effort, trial_outcome_level,
                                                                               action_type, gv)
+    # shift stimuli to the center of the screen
+    shift = abs(outline.pos[1])
+    spaceship.pos = (spaceship.pos[0], spaceship.pos[1] + shift)
+    outline.pos = (outline.pos[0], outline.pos[1] + shift)
+    target.pos = (target.pos[0], target.pos[1] + shift)
+    for outcome in outcomes:
+        outcome.pos = (outcome.pos[0], outcome.pos[1] - 220)
 
-    if not gv['sequential_offer_presentation']:  # simultaneous offer presentation
-        stimuli = [spaceship, outline, target, outcomes, oval_accept, accept_txt, oval_reject, reject_txt, cue]
-        hf.draw_all_stimuli(win, stimuli)
-        if action_type == 'approach':
-            EEG_config.send_trigger(EEG_config.triggers['offer_presentation_approach'])
-        elif action_type == 'avoid':
-            EEG_config.send_trigger(EEG_config.triggers['offer_presentation_avoid'])
+    # sequentially show effort and then outcome offer
+    hf.draw_all_stimuli(win, [cue], 0.5)
+    if action_type == 'approach':
+        EEG_config.send_trigger(EEG_config.triggers['effort_presentation_approach'])
+    elif action_type == 'avoid':
+        EEG_config.send_trigger(EEG_config.triggers['effort_presentation_avoid'])
+    hf.draw_all_stimuli(win, [spaceship, outline, target], 1)
+    hf.draw_all_stimuli(win, [fixation_cross], 0.5)
+    if action_type == 'approach':
+        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach'])
+    elif action_type == 'avoid':
+        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid'])
+    hf.draw_all_stimuli(win, [outcomes], 1)
+    hf.draw_all_stimuli(win, [fixation_cross])
 
-    else:  # sequential offer presentation
-        # shift stimuli to the center of the screen
-        shift = abs(outline.pos[1])
-        spaceship.pos = (spaceship.pos[0], spaceship.pos[1] + shift)
-        outline.pos = (outline.pos[0], outline.pos[1] + shift)
-        target.pos = (target.pos[0], target.pos[1] + shift)
-        for outcome in outcomes:
-            outcome.pos = (outcome.pos[0], outcome.pos[1] - 220)
-
-        # sequentially show effort and then outcome offer
-        hf.draw_all_stimuli(win, [fixation_cross, cue], 0.5)
-        if action_type == 'approach':
-            EEG_config.send_trigger(EEG_config.triggers['effort_presentation_approach'])
-        elif action_type == 'avoid':
-            EEG_config.send_trigger(EEG_config.triggers['effort_presentation_avoid'])
-        hf.draw_all_stimuli(win, [spaceship, outline, target, cue], 1)
-        hf.draw_all_stimuli(win, [fixation_cross, cue], 0.5)
-        if action_type == 'approach':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach'])
-        elif action_type == 'avoid':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid'])
-        hf.draw_all_stimuli(win, [outcomes, cue], 1)
-        hf.draw_all_stimuli(win, [fixation_cross, cue])
-
-        # shift back to original position
-        spaceship.pos = (spaceship.pos[0], spaceship.pos[1] - shift)
-        outline.pos = (outline.pos[0], outline.pos[1] - shift)
-        target.pos = (target.pos[0], target.pos[1] - shift)
-        for outcome in outcomes:
-            outcome.pos = (outcome.pos[0], outcome.pos[1] + 220)
+    # shift back to original position
+    spaceship.pos = (spaceship.pos[0], spaceship.pos[1] - shift)
+    outline.pos = (outline.pos[0], outline.pos[1] - shift)
+    target.pos = (target.pos[0], target.pos[1] - shift)
+    for outcome in outcomes:
+        outcome.pos = (outcome.pos[0], outcome.pos[1] + 220)
 
     clicked_button, response_time = hf.check_mouse_click(win, mouse)
 
@@ -526,7 +513,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     if clicked_button == 'left':
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
-        stimuli = [spaceship, outline, target, outcomes, cue]
+        stimuli = [spaceship, outline, target, outcomes]
         result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli,
                                                                              trial_effort, target, gv, EEG_config,
                                                                              effort_state)

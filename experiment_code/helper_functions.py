@@ -353,7 +353,7 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         win,
         text=f'+ {points}' if action_type == 'approach' else f'{points}',
         height=60,
-        pos=(0, 80),
+        pos=(0, 0),
         color='white',
         bold=True,
         font='Arial',
@@ -383,10 +383,10 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
     for frame in range(frames):
         update_position([spaceship, outline, target], move_delta)
         flame.pos = (spaceship.pos[0], spaceship.pos[1] + flame_delta[1])
-        stimuli = [spaceship, outline, target, flame, cue] + outcomes
+        stimuli = [spaceship, outline, target, flame] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text, cue])
+    draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_success'])
     elif action_type == 'avoid':
@@ -405,7 +405,7 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         win,
         text=f'{points}',
         height=60,
-        pos=(0, 80),
+        pos=(0, 0),
         color='white',
         bold=True,
         font='Arial',
@@ -434,10 +434,10 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
                     outcome.pos[0],
                     outcome.pos[1] - (frame / frames) * 50
                 )
-        stimuli = [spaceship, outline, target, cue] + outcomes
+        stimuli = [spaceship, outline, target] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text, cue])
+    draw_all_stimuli(win, [points_text])
     if action_type == 'approach':
         if result == 'failure':
             EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_failure'])

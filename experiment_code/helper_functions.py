@@ -99,6 +99,17 @@ def check_mouse_click(win, mouse):
         core.wait(0.01)
 
 
+def check_key_press(win, key_list):
+    while True:
+        keys = event.getKeys(timeStamped=True)
+        for key, time in keys:
+            if key in key_list:
+                return key, time
+        exit_q(win)
+        event.clearEvents()
+        core.wait(0.01)
+
+
 def convert_rgb_to_psychopy(color, alpha=1.0):
     """
     Convert RGB values to a range suitable for PsychoPy (-1 to 1) and include alpha for transparency.

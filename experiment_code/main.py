@@ -21,6 +21,7 @@ import time
 from psychopy import gui, visual, core, data, event
 import helper_functions as hf
 import training_instructions as ti
+import ctypes
 
 print('Reminder: Press Q to quit.')
 
@@ -30,11 +31,11 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '6',
-           'trial schedule': 'B_3',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
+expInfo = {'participant nr': '999',
+           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
            'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
-           'session nr': '1',  # 0 for training session, then 1, 2, 3
+           'session nr': '0',  # 0 for training session, then 1, 2, 3
            'age': '',
            'gender (f/m/o)': '',
            }
@@ -59,6 +60,7 @@ max_strength = 0.9 * max_strength  # MAJA
 # TASK VARIABLES
 gv = dict(
     # task parameters
+    response_keys=['j', 'k'],  # keys for accept / reject responses and slider movement
     max_strength=max_strength,
     gripper_zero_baseline=None,
     effort_duration=1,  # second duration for which the effort needs to be above threshold 1
@@ -188,9 +190,12 @@ win = visual.Window(
 )
 
 # MOUSE
-mouse = event.Mouse(visible=True, win=win)
-mouse.setVisible(True)
-win.setMouseVisible(True)
+win.setMouseVisible(False)
+mouse = event.Mouse(visible=False, win=win)
+mouse.setVisible(False)
+# Explicitly hide the cursor on Windows
+if os.name == 'nt':  # Check if the OS is Windows
+    ctypes.windll.user32.ShowCursor(False)
 
 # HAND GRIPPER
 DUMMY = expInfo['grippers (y/n)'].lower() == 'n'
@@ -238,7 +243,7 @@ button_txt = visual.TextStim(win=win, text='NEXT', height=30, pos=green_button.p
                              font='Arial')
 big_txt = visual.TextStim(win=win, text='Welcome!', height=80, pos=[0, 200], color='white', wrapWidth=1100,
                           font='Arial')
-instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 100], wrapWidth=1200, color='white',
+instructions_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 80], wrapWidth=1200, color='white',
                                    font='Arial')
 instructions_top_txt = visual.TextStim(win=win, text="Instructions", height=40, pos=[0, 300], wrapWidth=1200,
                                        color='white', font='Arial')
@@ -250,8 +255,8 @@ upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_
 lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -330), fillColor='white')
 lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_button.pos, color='black', bold=True,
                                    font='Arial')
-heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 144), size=(65, 65))
-reward_rate_stimulus = visual.ImageStim(win, image="pictures/money.png", pos=(280, 80), size=(65, 65))
+heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 134), size=(65, 65))
+reward_rate_stimulus = visual.ImageStim(win, image="pictures/money.png", pos=(280, 70), size=(65, 65))
 heart_cue = visual.ImageStim(win, image="pictures/heart.png", pos=(0, 0), size=(65, 65))
 reward_cue = visual.ImageStim(win, image="pictures/money.png", pos=heart_cue.pos, size=(65, 65))
 accept_txt = visual.TextStim(win=win, text='A', height=30, pos=(-35, -300), color='white', bold=True, font='Arial')
@@ -270,127 +275,150 @@ else:
     big_txt.text = "Welcome!"
     instructions_txt.text = (
         "\n\n\n\nPrepare to embark on your cosmic adventure!\n\n "
-        "When you're ready, click 'NEXT'."
+        "When you're ready, press SPACE."
     )
-    stimuli = [green_button, button_txt, big_txt, instructions_txt]
-    hf.draw_all_stimuli(win, stimuli)
-    hf.check_button(win, [green_button], stimuli, mouse)
+    big_txt.draw()
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
 
-#     # Calibrate hand gripper
-#     instructions_txt.text = (
-#         "As you'll remember, your primary control interface is the hand gripper, which powers your ship's engines.\n\n"
-#         "Before we start your adventure, we must recalibrate this equipment. "
-#         "Therefore, please keep your hands clear of the hand gripper for now.\n\n"
-#         "Click 'NEXT' to begin the calibration process."
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-# # CALIBRATE HAND GRIPPER ZERO BASELINE
-# win.flip()
-# instructions_top_txt.text = (
-#     "Calibration in progress.\n\n"
-#     "Please keep your hands away from the hand gripper."
-# )
-# hf.draw_all_stimuli(win, [instructions_top_txt], 1)
-# big_txt.pos = [0, 20]
-# for countdown in range(3, 0, -1):
-#     big_txt.text = f"{countdown}"
-#     hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
-#     if not DUMMY and countdown == 1:
-#         gv['gripper_zero_baseline'] = gripper.sample()[0]
-# win.flip()
-# core.wait(0.6)
-#
-# if gv['training']:
-#     ti.instructions_2(win, green_button, button_txt, instructions_txt, instructions_top_txt, big_txt, heart_rate_stimulus, reward_rate_stimulus, mouse, gv)
-# else:
-#     # Task overview
-#     instructions_txt.text = (
-#         "Excellent! Calibration is complete.\n\n"
-#         "This task is identical to the one you mastered in your training session. "
-#         "In this adventure, you'll pilot a spaceship through the cosmos, "
-#         "encountering stars and meteors. Each of these encounters will require you to make a decision "
-#         "on your space journey.\n\n"
-#         "Let's quickly review the key elements of your adventure.\n\n"
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # Block types
-#     instructions_txt.text = (
-#         "There are two types of encounters:\n\n"
-#         "1. In approach encounters, you'll face clouds of stars. More stars mean higher potential rewards. "
-#         "If you choose to accept the encounter with a left-click, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
-#         "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in no reward.\n\n"
-#         "2. In avoid encounters, you'll face meteor fields. More meteors indicate a greater potential loss. "
-#         "If you accept the encounter with a left-click, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
-#         "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in a loss."
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # Effort
-#     instructions_txt.text = (
-#         f"When you accept an encounter with a left-click, squeeze the gripper to power your spaceship. "
-#         f"Your goal is to reach the target power level as quickly as possible. "
-#         f"Once at target, maintain the power for 1 second until your spaceship starts moving. "
-#         f"You have {gv['time_limit']} seconds for each mission attempt. Therefore, starting too slow may result in mission failure.\n\n"
-#         f"Your adventure consists of {max(gv['block_number'])} blocks, each with {gv['num_trials_per_block']} encounters.\n"
-#         f"Choose which encounters to accept wisely to not run out of energy whilst maximising your rewards and minimising your losses!"
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # Monetary reward
-#     instructions_txt.text = (
-#         f"You start your adventure with a base reward of £{gv['base_bonus_payment']}.\n"
-#         "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds and 5 meteor fields). "
-#         "Your choices and performance in these encounters will adjust your final reward.\n\n"
-#         "Each point is worth 1p. For example, if an encounter where you accepted the mission and collected an 80-point star cloud is chosen, you'll earn 80p. "
-#         "However, if you rejected that encounter or failed the mission, you'll earn nothing. "
-#         "Similarly, if an encounter where you accepted the mission and successfully evaded an 80-point meteor field is chosen, nothing will be subtracted from your base reward. "
-#         "But if you rejected that encounter or failed the mission, you'll lose 80p."
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # Ratings
-#     instructions_txt.text = (
-#         "During your space adventure, you'll occasionally need to report on two key metrics:\n\n\n\n\n\n"
-#         "When prompted, consider your recent experiences in the context of your overall average experiences during your adventure."
-#     )
-#     heart_rate_text = visual.TextStim(win, text="• Your current heart rate\n\n", pos=instructions_txt.pos,
-#                                       height=instructions_txt.height)
-#     reward_rate_text = visual.TextStim(win, text="\n• Your current reward rate", pos=instructions_txt.pos,
-#                                        height=instructions_txt.height)
-#     stimuli = [green_button, button_txt, instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus,
-#                reward_rate_stimulus]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     instructions_txt.text = (
-#         "An icon in the top right corner of the screen will act as a cue, reminding you whether you are currently tracking your reward or heart rate.\n\n"
-#         "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high reward rate.\n"
-#         "Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
-#     )
-#     stimuli = [green_button, button_txt, instructions_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # Start
-#     win.flip()
-#     big_txt.text = "Grab the hand gripper to prepare for launch!\n"
-#     stimuli = [green_button, button_txt, big_txt]
-#     hf.draw_all_stimuli(win, stimuli)
-#     hf.check_button(win, [green_button], stimuli, mouse)
-#
-#     # MAJA - some break point here so that the actual task only starts after TUS has been completed
+    # Calibrate hand gripper
+    instructions_txt.text = (
+        "As you'll remember, your primary control interface is the hand gripper, which powers your ship's engines.\n\n"
+        "Before we start your adventure, we must recalibrate this equipment. "
+        "Therefore, please keep your hands clear of the hand gripper for now.\n\n"
+        "Press SPACE to begin the calibration process."
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+# CALIBRATE HAND GRIPPER ZERO BASELINE
+win.flip()
+instructions_top_txt.text = (
+    "Calibration in progress.\n\n"
+    "Please keep your hands away from the hand gripper."
+)
+hf.draw_all_stimuli(win, [instructions_top_txt], 1)
+big_txt.pos = [0, 20]
+for countdown in range(3, 0, -1):
+    big_txt.text = f"{countdown}"
+    hf.draw_all_stimuli(win, [instructions_top_txt, big_txt], 1)
+    if not DUMMY and countdown == 1:
+        gv['gripper_zero_baseline'] = gripper.sample()[0]
+win.flip()
+core.wait(0.6)
+
+if gv['training']:
+    ti.instructions_2(win, green_button, button_txt, instructions_txt, instructions_top_txt, big_txt, heart_rate_stimulus, reward_rate_stimulus, mouse, gv)
+else:
+    # Task overview
+    instructions_txt.text = (
+        "Excellent! Calibration is complete.\n\n"
+        "This task is identical to the one you mastered in your training session. "
+        "In this adventure, you'll pilot a spaceship through the cosmos, "
+        "encountering stars and meteors. Each of these encounters will require you to make a decision "
+        "on your space journey.\n\n"
+        "Press SPACE to quickly review the key elements of your adventure.\n\n"
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # Block types
+    instructions_txt.text = (
+        "There are two types of encounters:\n\n"
+        "1. In approach encounters, you'll face clouds of stars. More stars mean higher potential rewards. "
+        "If you choose to accept the encounter with a left-click, it becomes a mission where you must exert effort to approach the stars and collect the reward. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in no reward.\n\n"
+        "2. In avoid encounters, you'll face meteor fields. More meteors indicate a greater potential loss. "
+        "If you accept the encounter with a left-click, it becomes a mission where you must exert effort to avoid the meteors and evade the loss. "
+        "Rejecting the encounter with a right-click or failing to exert the required effort during the mission results in a loss."
+        "\n\nPress SPACE to continue."
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # Effort
+    instructions_txt.text = (
+        f"When you accept an encounter with a left-click, squeeze the gripper to power your spaceship. "
+        f"Your goal is to reach the target power level as quickly as possible. "
+        f"Once at target, maintain the power for 1 second until your spaceship starts moving. "
+        f"You have {gv['time_limit']} seconds for each mission attempt. Therefore, starting too slow may result in mission failure.\n\n"
+        f"Your adventure consists of {max(gv['block_number'])} blocks, each with {gv['num_trials_per_block']} encounters.\n"
+        f"Choose which encounters to accept wisely to not run out of energy whilst maximising your rewards and minimising your losses!"
+        f"\n\nPress SPACE to continue."
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # Monetary reward
+    instructions_txt.text = (
+        f"You start your adventure with a base reward of £{gv['base_bonus_payment']}.\n"
+        "At the end of your adventure, we'll randomly select 10 encounters (5 star clouds and 5 meteor fields). "
+        "Your choices and performance in these encounters will adjust your final reward.\n\n"
+        "Each point is worth 1p. For example, if an encounter where you accepted the mission and collected an 80-point star cloud is chosen, you'll earn 80p. "
+        "However, if you rejected that encounter or failed the mission, you'll earn nothing. "
+        "Similarly, if an encounter where you accepted the mission and successfully evaded an 80-point meteor field is chosen, nothing will be subtracted from your base reward. "
+        "But if you rejected that encounter or failed the mission, you'll lose 80p."
+        "\n\nPress SPACE to continue."
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # Ratings
+    instructions_txt.text = (
+        "During your space adventure, you'll occasionally need to report on two key metrics:\n\n\n\n"
+        "\n\nWhen prompted, consider your recent experiences in the context of your overall average experiences during your adventure."
+        "\n\nPress SPACE to continue."
+    )
+    heart_rate_text = visual.TextStim(win, text="• Your current heart rate\n\n\n", pos=(instructions_txt.pos),
+                                      height=instructions_txt.height)
+    reward_rate_text = visual.TextStim(win, text="\n• Your current reward rate\n", pos=instructions_txt.pos,
+                                       height=instructions_txt.height)
+    stimuli = [instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus,
+               reward_rate_stimulus]
+    hf.draw_all_stimuli(win, stimuli)
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    event.clearEvents()
+
+    instructions_txt.text = (
+        "An icon in the top right corner of the screen will act as a cue, reminding you whether you are currently tracking your reward or heart rate.\n\n"
+        "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high reward rate.\n"
+        "Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
+        "\n\nPress SPACE to continue."
+    )
+    instructions_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # Start
+    win.flip()
+    big_txt.text = "Grab the hand gripper to prepare for launch!\n"
+    big_txt.draw()
+    win.flip()
+    event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+    hf.exit_q(win)
+    event.clearEvents()
+
+    # MAJA - some break point here so that the actual task only starts after TUS has been completed
 
 ###################################
 # TASK
@@ -447,10 +475,10 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         win.flip()
         if action_type == 'approach':
             action_text = "collect stars to earn points"
-            outcome = hf.draw_star(win, [450, 150], size=25, color=[255, 255, 255])
+            outcome = hf.draw_star(win, [450, 140], size=25, color=[255, 255, 255])
         elif action_type == 'avoid':
             action_text = "evade meteors to avoid losing points"
-            outcome = hf.draw_meteor(win, [540, 150], size=24, color=[255, 255, 255])
+            outcome = hf.draw_meteor(win, [540, 140], size=24, color=[255, 255, 255])
         if attention_focus == 'reward':
             reward_rate_stimulus.pos = [550, 60]
             image = reward_rate_stimulus
@@ -463,13 +491,13 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
             f"This is block {current_block} of {max(gv['block_number'])}\n\n"
             f"Your mission is to {action_text}\n\n"
             f"Throughout this block, pay attention to your {attention_focus} rate\n\n"
-            "When you're ready to continue, click the 'START' button!"
+            "When you're ready to continue, press SPACE!"
         )
-        stimuli = [green_button, button_txt, instructions_txt, image, outcome]
+        stimuli = [instructions_txt, image, outcome]
         hf.draw_all_stimuli(win, stimuli, 1)
-        hf.check_button(win, [green_button], stimuli, mouse)
+        event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+        event.clearEvents()
         win.color = hf.convert_rgb_to_psychopy([0, 38, 82])  # set window color back to blue for trials
-        button_txt.text = 'NEXT'  # reset button text
         win.flip()
     else:
         pass
@@ -507,10 +535,10 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     for outcome in outcomes:
         outcome.pos = (outcome.pos[0], outcome.pos[1] + 220)
 
-    clicked_button, response_time = hf.check_mouse_click(win, mouse)
+    clicked_button, response_time = hf.check_key_press(win, gv['response_keys'])
 
     # accept
-    if clicked_button == 'left':
+    if clicked_button == gv['response_keys'][0]:
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
         stimuli = [spaceship, outline, target, outcomes]
@@ -535,7 +563,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
 
     # reject
     # elif clicked_button == lower_button:  # with accept / reject buttons
-    elif clicked_button == 'right':
+    elif clicked_button == gv['response_keys'][1]:
         EEG_config.send_trigger(EEG_config.triggers['participant_choice_reject'])
         response = 'reject'
         result, effort_trace, average_effort, effort_time = None, None, None, None

@@ -31,10 +31,10 @@ print('Reminder: Press Q to quit.')
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
 expInfo = {'participant nr': '7',
-           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
+           'trial schedule': 'B_5',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
            'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
-           'session nr': '0',  # 0 for training session, then 1, 2, 3
+           'session nr': '1',  # 0 for training session, then 1, 2, 3
            'age': '',
            'gender (f/m/o)': '',
            }
@@ -575,11 +575,11 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # attention_focus = 'heart'
 
     # set trial effort to a constant and then alternate between 'shifted' and 'normal' to test this is working
-    trial_effort = 90
-    if info['trial_count'] % 2 == 0:
-        effort_state = 'shifted'
-    else:
-        effort_state = 'normal'
+    # trial_effort = 90
+    # if info['trial_count'] % 2 == 0:
+    #     effort_state = 'shifted'
+    # else:
+    #     effort_state = 'normal'
     ##########################################################################################
     ##########################################################################################
 

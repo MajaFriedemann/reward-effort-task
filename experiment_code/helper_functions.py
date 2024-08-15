@@ -26,8 +26,7 @@ class EEGConfig:
         if self.send_triggers:
             print('write function to trigger code ' + str(code))
         else:
-            # print('would send trigger: ' + str(code))
-            pass
+            print('would send trigger: ' + str(code))
 
 
 ###################################
@@ -101,11 +100,14 @@ def check_mouse_click(win, mouse):
 
 
 def check_key_press(win, key_list):
+    start_time = core.getTime()
+    event.clearEvents()
     while True:
         keys = event.getKeys(timeStamped=True)
         for key, time in keys:
             if key in key_list:
-                return key, time
+                reaction_time = time - start_time
+                return key, reaction_time
         exit_q(win)
         event.clearEvents()
         core.wait(0.01)
@@ -325,10 +327,9 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
         draw_all_stimuli(win, stimuli)
 
         if effort_expended > (0.95*trial_effort):
-
-            print('effort_state', effort_state)
-            print('actual_effort_expended', actual_effort_expended)
-            print('effort_expended on screen', effort_expended)
+            # print('effort_state', effort_state)
+            # print('actual_effort_expended', actual_effort_expended)
+            # print('effort_expended on screen', effort_expended)
 
             if not threshold_crossed:
                 EEG_config.send_trigger(EEG_config.triggers['effort_threshold_crossed'])
@@ -492,8 +493,10 @@ def get_rating(win, attention_focus, image, gv):
                            granularity=1,
                            labelHeight=23,
                            color='white',  # Color of the slider and labels
-                           markerColor='blue',  # Blue marker color
+                           markerColor='red',
                            )
+    if attention_focus == 'reward':
+        slider.markerColor = 'goldenrod'
     # Start the slider at a random position
     start_pos = random.randint(0, 10)
     slider.markerPos = start_pos

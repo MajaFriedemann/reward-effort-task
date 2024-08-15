@@ -8,7 +8,7 @@ Maja Friedemann 2024
 # IMPORT PACKAGES
 ###################################
 import random
-from psychopy import gui, visual, core, data, event, core
+from psychopy import gui, visual, core, data, event, core, clock
 import pandas as pd
 import numpy as np
 import serial
@@ -464,32 +464,39 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         core.wait(2)
 
 
-def get_rating(win, mouse, attention_focus, image):
+def get_rating(win, attention_focus, image, gv):
     """
-    Get a rating for heart rate of reward rate from the participant using a slider.
+    Get a rating for heart rate or reward rate from the participant using a discrete slider controlled by keys.
+    Outputs the rating, the response time, and the random start position.
     """
-    mouse.setPos(newPos=(0, 0))  # reset the mouse position to the middle of the slider
-    slider = visual.Slider(win,
-                           ticks=(1, 2, 3),
-                           labels=["Low", "", "High"],
-                           pos=(0, -20),
-                           size=(500, 70), units="pix", flip=True, style='slider', granularity=0, labelHeight=35)
-    slider.tickLines.sizes = (1, 70)
 
-    slider_marker = visual.ShapeStim(
-        win=win,
-        vertices=((0, -35), (0, 35)),
-        lineWidth=13,
-        pos=(0, 0),
-        closeShape=False,
-        lineColor=convert_rgb_to_psychopy([250, 243, 62]),
-    )
+    # Define the slider with 11 ticks and vertical lines
+    ticks = list(range(11))  # 11 ticks
+    labels = ["Low"] + [""] * 9 + ["High"]
+
+    slider = visual.Slider(win,
+                           ticks=ticks,
+                           labels=labels,
+                           pos=(0, 0),
+                           size=(600, 70),
+                           units="pix",
+                           flip=True,
+                           style=['radio'],
+                           granularity=1,
+                           labelHeight=23,
+                           color='white',  # Color of the slider and labels
+                           markerColor='blue',  # Blue marker color
+                           )
+
+    # Start the slider at a random position
+    start_pos = random.randint(0, 10)
+    slider.markerPos = start_pos
 
     slider_question_text = visual.TextStim(
         win,
         text=f'How is your current {attention_focus} rate?',
         height=40,
-        pos=(0, 200),
+        pos=(0, 220),
         color='white',
         bold=True,
         font='Arial',
@@ -497,26 +504,38 @@ def get_rating(win, mouse, attention_focus, image):
         wrapWidth=1000
     )
 
-    image.pos = [0, 120]
+    image.pos = [0, 150]
 
-    while not slider.rating:
-        # restrict slider marker to the range of slider
-        if mouse.getPos()[0] > (slider.size[0] / 2):
-            slider_marker.pos = ((slider.size[0] / 2), slider.pos[1])
-        elif mouse.getPos()[0] < -(slider.size[0] / 2):
-            slider_marker.pos = (-(slider.size[0] / 2), slider.pos[1])
-        else:
-            slider_marker.pos = (mouse.getPos()[0], slider.pos[1])
+    # Start timing the response
+    response_timer = clock.Clock()
+
+    while True:
         slider.draw()
         slider_question_text.draw()
-        slider_marker.draw()
         image.draw()
         win.flip()
 
-    rating = 1 - (slider.size[0] / 2 - slider_marker.pos[0]) / slider.size[0]
+        keys = event.waitKeys(keyList=gv['response_keys'] + ['space'])
+
+        if 'j' in keys:
+            slider.markerPos = max(0, slider.markerPos - 1)
+        elif 'k' in keys:
+            slider.markerPos = min(10, slider.markerPos + 1)
+
+        # To finalize the rating, the 'space' key is used to confirm the selection
+        if 'space' in keys:
+            break
+
+    # Stop the timer and get the response time
+    response_time = response_timer.getTime()
+
+    # Calculate the rating based on the marker position
+    rating = slider.markerPos / 10
     rating = round(rating, 3)
     core.wait(0.5)
-    return rating
+
+    return rating, response_time, start_pos
+
 
 
 def calculate_bonus_payment(all_trials, gv):

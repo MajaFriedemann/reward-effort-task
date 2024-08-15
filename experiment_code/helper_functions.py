@@ -26,7 +26,8 @@ class EEGConfig:
         if self.send_triggers:
             print('write function to trigger code ' + str(code))
         else:
-            print('would send trigger: ' + str(code))
+            # print('would send trigger: ' + str(code))
+            pass
 
 
 ###################################
@@ -302,12 +303,15 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
 
         # if effort state is 'shifted', adjust the effort for visual display and threshold crossing
         actual_effort_expended = effort_expended  # preserve the actual effort value
+
         if effort_state == 'shifted':
-            actual_effort_expended_level = actual_effort_expended / 10
-            shifted_effort_expended_level = np.sqrt((gv['assumed_k'] * actual_effort_expended_level ** 2 + gv['net_value_shift']) / gv['assumed_k'])
-            shifted_effort_expended = shifted_effort_expended_level * 10
-            extra_effort_required = shifted_effort_expended - actual_effort_expended
-            effort_expended -= extra_effort_required
+            k = gv['assumed_k']
+            net_value_shift = gv['net_value_shift']
+            what_participant_exerts_level = actual_effort_expended / 10
+            what_is_displayed_level = np.sqrt((k * what_participant_exerts_level ** 2 - net_value_shift) / k)
+            what_is_displayed = what_is_displayed_level * 10
+            what_is_displayed = np.maximum(what_is_displayed, 0)
+            effort_expended = what_is_displayed
 
         effort_trace.append(actual_effort_expended)  # append the actual effort to the trace we are saving
 
@@ -321,6 +325,11 @@ def sample_effort(win, dummy, mouse, gripper, stimuli, trial_effort, target, gv,
         draw_all_stimuli(win, stimuli)
 
         if effort_expended > (0.95*trial_effort):
+
+            print('effort_state', effort_state)
+            print('actual_effort_expended', actual_effort_expended)
+            print('effort_expended on screen', effort_expended)
+
             if not threshold_crossed:
                 EEG_config.send_trigger(EEG_config.triggers['effort_threshold_crossed'])
                 threshold_crossed = True
@@ -469,11 +478,9 @@ def get_rating(win, attention_focus, image, gv):
     Get a rating for heart rate or reward rate from the participant using a discrete slider controlled by keys.
     Outputs the rating, the response time, and the random start position.
     """
-
     # Define the slider with 11 ticks and vertical lines
     ticks = list(range(11))  # 11 ticks
     labels = ["Low"] + [""] * 9 + ["High"]
-
     slider = visual.Slider(win,
                            ticks=ticks,
                            labels=labels,
@@ -487,11 +494,9 @@ def get_rating(win, attention_focus, image, gv):
                            color='white',  # Color of the slider and labels
                            markerColor='blue',  # Blue marker color
                            )
-
     # Start the slider at a random position
     start_pos = random.randint(0, 10)
     slider.markerPos = start_pos
-
     slider_question_text = visual.TextStim(
         win,
         text=f'How is your current {attention_focus} rate?',
@@ -503,39 +508,29 @@ def get_rating(win, attention_focus, image, gv):
         alignText='center',
         wrapWidth=1000
     )
-
     image.pos = [0, 150]
-
     # Start timing the response
     response_timer = clock.Clock()
-
     while True:
         slider.draw()
         slider_question_text.draw()
         image.draw()
         win.flip()
-
         keys = event.waitKeys(keyList=gv['response_keys'] + ['space'])
-
         if 'j' in keys:
             slider.markerPos = max(0, slider.markerPos - 1)
         elif 'k' in keys:
             slider.markerPos = min(10, slider.markerPos + 1)
-
         # To finalize the rating, the 'space' key is used to confirm the selection
         if 'space' in keys:
             break
-
     # Stop the timer and get the response time
     response_time = response_timer.getTime()
-
     # Calculate the rating based on the marker position
     rating = slider.markerPos / 10
     rating = round(rating, 3)
     core.wait(0.5)
-
     return rating, response_time, start_pos
-
 
 
 def calculate_bonus_payment(all_trials, gv):
@@ -545,24 +540,18 @@ def calculate_bonus_payment(all_trials, gv):
     # Separate trials into approach and avoid blocks
     approach_trials = [trial for trial in all_trials if trial['block_action_type'] == 'approach']
     avoid_trials = [trial for trial in all_trials if trial['block_action_type'] == 'avoid']
-
     # Ensure there are at least 5 trials in each category
     if len(approach_trials) < 5 or len(avoid_trials) < 5:
         raise ValueError("Not enough trials in one or both categories to select 5 trials each.")
-
     # Randomly select 5 trials from each block type
     selected_approach_trials = random.sample(approach_trials, 5)
     selected_avoid_trials = random.sample(avoid_trials, 5)
-
     # Sum up the points from the selected trials
     total_points = sum(trial['points'] for trial in selected_approach_trials + selected_avoid_trials)
-
     # Calculate the total bonus based on points
     points_per_penny = 0.01  # Each point is worth 1 penny
     bonus_from_points = total_points * points_per_penny
-
     # Calculate the final payment
     final_bonus_payment = gv['base_bonus_payment'] + bonus_from_points
-
     return final_bonus_payment
 

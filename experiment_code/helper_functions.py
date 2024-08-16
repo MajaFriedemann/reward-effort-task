@@ -493,10 +493,10 @@ def get_rating(win, attention_focus, image, gv):
                            granularity=1,
                            labelHeight=23,
                            color='white',  # Color of the slider and labels
-                           markerColor='red',
+                           markerColor=convert_rgb_to_psychopy([245, 0, 0]),  # heart red
                            )
     if attention_focus == 'reward':
-        slider.markerColor = 'goldenrod'
+        slider.markerColor = convert_rgb_to_psychopy([234, 144, 46])  # reward gold
     # Start the slider at a random position
     start_pos = random.randint(0, 10)
     slider.markerPos = start_pos

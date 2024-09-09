@@ -30,9 +30,9 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '999',
+expInfo = {'participant nr': '1',
            'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
-           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
+           'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
            'session nr': '0',  # 0 for training session, then 1, 2, 3
            'age': '',
@@ -575,11 +575,15 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # attention_focus = 'heart'
 
     # set trial effort to a constant and then alternate between 'shifted' and 'normal' to test this is working
-    # trial_effort = 90
-    # if info['trial_count'] % 2 == 0:
-    #     effort_state = 'shifted'
-    # else:
-    #     effort_state = 'normal'
+    # starting with normal, then shifted, then normal, then shifted, etc.
+    # currently, net value shift = 30, which turns 80 into ca. 95
+    # Rong uses a linear shift of 25
+    trial_effort = 80
+    if info['trial_count'] % 2 == 0:
+        effort_state = 'normal'
+    else:
+        effort_state = 'shifted'
+    print('trial:', info['trial_count'], 'effort:', trial_effort, 'effort_state:', effort_state)
 
     ##########################################################################################
     ##########################################################################################

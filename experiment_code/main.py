@@ -265,6 +265,7 @@ oval_accept = visual.Circle(win=win, radius=24, pos=accept_txt.pos, edges=180, l
 reject_txt = visual.TextStim(win=win, text='R', height=30, pos=(35, -300), color='white', bold=True, font='Arial')
 oval_reject = visual.Circle(win=win, radius=24, pos=reject_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
 fixation_cross = visual.TextStim(win, text='+', height=60, color='white')
+fixation_cross_green = visual.TextStim(win, text='+', height=60, color='green')
 
 ###################################
 # INSTRUCTIONS
@@ -342,9 +343,9 @@ event.clearEvents()
 instructions_txt.text = (
     "Each trial consists of the following steps:\n\n"
     "1. Spaceship & Effort Bar: A spaceship appears with an effort bar, indicating the amount of effort required for the trial.\n"
-    "2. Fixation Cross: A brief fixation cross is shown on the screen.\n"
+    "2. Fixation Cross: A brief white fixation cross is shown on the screen.\n"
     f"3. Encounter: You'll face either a star cloud (potential win) or a meteor field (potential loss).\n"
-    f"4. Decision: A second fixation cross appears, signaling you to make a choice. Press the designated response keys to accept or reject an encounter.\n"
+    f"4. Decision: A green fixation cross appears, signaling you to make a choice. Press the designated response keys to accept or reject an encounter.\n"
     f"5. Outcome: If you accept, you'll need to exert the required effort to either approach the stars or avoid the meteors. "
     "Rejecting the encounter means no effort is required, but you forgo the chance to win a reward or avoid a loss. After your choice, the outcome is displayed, and the next trial begins."
     "\n\nPress SPACE to continue."
@@ -648,7 +649,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     elif action_type == 'avoid':
         EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid'])
     hf.draw_all_stimuli(win, [outcomes], 1)  # show reward/loss 1s
-    hf.draw_all_stimuli(win, [fixation_cross], 0.1)  # show fixation cross until choice
+    hf.draw_all_stimuli(win, [fixation_cross_green], 0.1)  # show fixation cross until choice
 
     # shift back to original position
     spaceship.pos = (spaceship.pos[0], spaceship.pos[1] - shift)

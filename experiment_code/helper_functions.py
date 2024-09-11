@@ -29,10 +29,7 @@ class EEGConfig:
         if self.send_triggers:
             # Actual sending of the trigger over serial port
             try:
-                self.IOport.write(str.encode('m'))
-                self.IOport.write(str.encode('h'))
                 self.IOport.write(str.encode(chr(code)))
-                self.IOport.write(str.encode(chr(0)))
                 self.IOport.flush()
                 print(f"Trigger {code} sent over serial port.")
             except Exception as e:

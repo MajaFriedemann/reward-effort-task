@@ -579,12 +579,15 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # starting with normal, then shifted, then normal, then shifted, etc.
     # currently, net value shift = 30, which turns 80 into ca. 95
     # Rong uses a linear shift of 25
-    trial_effort = 80
-    if info['trial_count'] % 2 == 0:
-        effort_state = 'normal'
-    else:
-        effort_state = 'shifted'
-    print('trial:', info['trial_count'], 'effort:', trial_effort, 'effort_state:', effort_state)
+    # trial_effort = 80
+    # if info['trial_count'] % 2 == 0:
+    #     action_type = 'approach'
+    #     attention_focus = 'reward'
+    #     rating_trial = "False"
+    # else:
+    #     action_type = 'avoid'
+    #     attention_focus = 'heart'
+    #     rating_trial = "True"
 
     ##########################################################################################
     ##########################################################################################

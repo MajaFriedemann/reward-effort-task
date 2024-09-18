@@ -58,14 +58,23 @@ def exit_q(win, key_list=None):
     return res
 
 
-def draw_all_stimuli(win, stimuli, wait=0.0):
+def draw_all_stimuli(win, stimuli, wait=0.0, EEG_config=None, trigger_code=None):
     """
-    draw all stimuli, flip window, wait
+    draw all stimuli, flip window, and send EEG trigger if provided.
     """
-    flattened_stimuli = [stim for sublist in stimuli for stim in (sublist if isinstance(sublist, list) else [sublist])]  # flatten the list of stimuli to accommodate nested lists
+    flattened_stimuli = [stim for sublist in stimuli for stim in (
+        sublist if isinstance(sublist, list) else [sublist])]  # flatten the list of stimuli to accommodate nested lists
     for stimulus in flattened_stimuli:
         stimulus.draw()
-    win.flip(), exit_q(win), core.wait(wait)
+
+    # If an EEG_config and trigger_code are provided, use callOnFlip to send the trigger
+    if EEG_config and trigger_code is not None:
+        win.callOnFlip(EEG_config.send_trigger, trigger_code)
+
+    # Flip the window and wait for the specified time
+    win.flip()
+    exit_q(win)
+    core.wait(wait)
 
 
 def check_button(win, buttons, stimuli, mouse):
@@ -109,7 +118,11 @@ def check_mouse_click(win, mouse):
         core.wait(0.01)
 
 
-def check_key_press(win, key_list):
+def check_key_press(win, key_list, EEG_config=None, trigger_mapping=None):
+    """
+    check for key press, return the key and reaction time.
+    if EEG_config and trigger_mapping are provided, send the appropriate trigger when a key is pressed.
+    """
     start_time = core.getTime()
     event.clearEvents()
     while True:
@@ -117,6 +130,11 @@ def check_key_press(win, key_list):
         for key, time in keys:
             if key in key_list:
                 reaction_time = time - start_time
+                # send the trigger if EEG_config and trigger_mapping are provided
+                if EEG_config and trigger_mapping:
+                    trigger_code = trigger_mapping.get(key)
+                    if trigger_code:
+                        EEG_config.send_trigger(trigger_code)
                 return key, reaction_time
         exit_q(win)
         event.clearEvents()
@@ -417,14 +435,19 @@ def animate_success(win, spaceship, outcomes, target, outline, points, action_ty
         stimuli = [spaceship, outline, target, flame] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text])
+    # determine EEG trigger
     if action_type == 'approach':
-        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_success'])
+        trigger_code = EEG_config.triggers['outcome_presentation_approach_success']
     elif action_type == 'avoid':
-        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_success'])
-    core.wait(gv['outcome_presentation_time'])  # Hold the final frame for a few seconds
+        trigger_code = EEG_config.triggers['outcome_presentation_avoid_success']
+
+    # draw the outcome and send the trigger when the window flips
+    draw_all_stimuli(win, [points_text], gv['outcome_presentation_time'], EEG_config, trigger_code)
+
+    # ff in training, wait an additional 2 seconds
     if gv['training']:
         core.wait(2)
+
 
 
 def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points, action_type, result, EEG_config, gv, cue):
@@ -468,26 +491,31 @@ def animate_failure_or_reject(win, spaceship, outline, target, outcomes, points,
         stimuli = [spaceship, outline, target] + outcomes
         draw_all_stimuli(win, stimuli, 0.008)
 
-    draw_all_stimuli(win, [points_text])
+    # determine the appropriate trigger code for outcome presentation
     if action_type == 'approach':
         if result == 'failure':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_failure'])
+            trigger_code = EEG_config.triggers['outcome_presentation_approach_failure']
         elif result == 'reject':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach_reject'])
+            trigger_code = EEG_config.triggers['outcome_presentation_approach_reject']
     elif action_type == 'avoid':
         if result == 'failure':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_failure'])
+            trigger_code = EEG_config.triggers['outcome_presentation_avoid_failure']
         elif result == 'reject':
-            EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid_reject'])
-    core.wait(gv['outcome_presentation_time'])  # Hold the final frame for a few seconds
+            trigger_code = EEG_config.triggers['outcome_presentation_avoid_reject']
+
+    # dse draw_all_stimuli to present the outcome and send the EEG trigger at the same time
+    draw_all_stimuli(win, [points_text], gv['outcome_presentation_time'], EEG_config, trigger_code)
+
+    # if in training, wait an additional 2 seconds
     if gv['training']:
         core.wait(2)
 
 
-def get_rating(win, attention_focus, image, gv):
+def get_rating(win, attention_focus, image, gv, EEG_config=None, response_trigger_code=None):
     """
-    Get a rating for heart rate or reward rate from the participant using a discrete slider controlled by keys.
-    Outputs the rating, the response time, and the random start position.
+    get a rating for heart rate or reward rate from the participant using a discrete slider controlled by keys.
+    outputs the rating, the response time, and the random start position.
+    sends an EEG trigger when the participant confirms their rating.
     """
     # Define the slider with 11 ticks and vertical lines
     ticks = list(range(11))  # 11 ticks
@@ -522,13 +550,18 @@ def get_rating(win, attention_focus, image, gv):
         wrapWidth=1000
     )
     image.pos = [0, 150]
+
     # Start timing the response
     response_timer = clock.Clock()
+
+    # Present the slider and question, flip the window, and start response timer
     while True:
         slider.draw()
         slider_question_text.draw()
         image.draw()
         win.flip()
+
+        # Capture key presses and process slider movement or rating confirmation
         keys = event.waitKeys(keyList=gv['response_keys'] + ['space'])
         if 'j' in keys:
             slider.markerPos = max(0, slider.markerPos - 1)
@@ -536,13 +569,18 @@ def get_rating(win, attention_focus, image, gv):
             slider.markerPos = min(10, slider.markerPos + 1)
         # To finalize the rating, the 'space' key is used to confirm the selection
         if 'space' in keys:
+            if EEG_config and response_trigger_code:
+                EEG_config.send_trigger(response_trigger_code)  # Send the trigger when the rating is confirmed
             break
+
     # Stop the timer and get the response time
     response_time = response_timer.getTime()
     # Calculate the rating based on the marker position
     rating = slider.markerPos / 10
     rating = round(rating, 3)
+
     core.wait(0.5)
+
     return rating, response_time, start_pos
 
 

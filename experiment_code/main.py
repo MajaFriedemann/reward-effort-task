@@ -235,6 +235,10 @@ triggers = dict(
 # Create an EEGConfig object
 send_triggers = expInfo['eeg (y/n)'].lower() == 'y'
 EEG_config = hf.EEGConfig(triggers, send_triggers)
+trigger_mapping = {
+    gv['response_keys'][0]: EEG_config.triggers['participant_choice_accept'],  # trigger for accept
+    gv['response_keys'][1]: EEG_config.triggers['participant_choice_reject'],  # trigger for reject
+}
 
 ###################################
 # CREATE STIMULI
@@ -638,19 +642,13 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         outcome.pos = (outcome.pos[0], outcome.pos[1] - 220)
 
     # sequentially show effort and then outcome offer
-    hf.draw_all_stimuli(win, [cue], 0.5)  # show cue 500ma
-    if action_type == 'approach':
-        EEG_config.send_trigger(EEG_config.triggers['effort_presentation_approach'])
-    elif action_type == 'avoid':
-        EEG_config.send_trigger(EEG_config.triggers['effort_presentation_avoid'])
-    hf.draw_all_stimuli(win, [spaceship, outline, target], 1)  # show effort 1s
+    hf.draw_all_stimuli(win, [cue], 0.5)  # show cue 500ms
+    effort_trigger_code = EEG_config.triggers['effort_presentation_approach'] if action_type == 'approach' else EEG_config.triggers['effort_presentation_avoid']
+    hf.draw_all_stimuli(win, [spaceship, outline, target], 1, EEG_config, effort_trigger_code)  # show effort 1s and send EEG trigger
     hf.draw_all_stimuli(win, [fixation_cross], 0.5)  # show fixation cross 500ms
-    if action_type == 'approach':
-        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_approach'])
-    elif action_type == 'avoid':
-        EEG_config.send_trigger(EEG_config.triggers['outcome_presentation_avoid'])
-    hf.draw_all_stimuli(win, [outcomes], 1)  # show reward/loss 1s
-    hf.draw_all_stimuli(win, [fixation_cross_green], 0.1)  # show fixation cross until choice
+    outcome_trigger_code = EEG_config.triggers['outcome_presentation_approach'] if action_type == 'approach' else EEG_config.triggers['outcome_presentation_avoid']
+    hf.draw_all_stimuli(win, [outcomes], 1, EEG_config, outcome_trigger_code)  # show reward/loss 1s and send EEG trigger
+    hf.draw_all_stimuli(win, [fixation_cross_green], 0.1)
 
     # shift back to original position
     spaceship.pos = (spaceship.pos[0], spaceship.pos[1] - shift)
@@ -659,11 +657,11 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     for outcome in outcomes:
         outcome.pos = (outcome.pos[0], outcome.pos[1] + 220)
 
-    clicked_button, response_time = hf.check_key_press(win, gv['response_keys'])
+    # capture the participant's response and send the trigger when the key is pressed
+    clicked_button, response_time = hf.check_key_press(win, gv['response_keys'], EEG_config, trigger_mapping)
 
     # accept
     if clicked_button == gv['response_keys'][0]:
-        EEG_config.send_trigger(EEG_config.triggers['participant_choice_accept'])
         response = 'accept'
         stimuli = [spaceship, outline, target, outcomes]
         result, effort_trace, average_effort, effort_time = hf.sample_effort(win, DUMMY, mouse, gripper, stimuli,
@@ -686,9 +684,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
                                          EEG_config, gv, cue)
 
     # reject
-    # elif clicked_button == lower_button:  # with accept / reject buttons
     elif clicked_button == gv['response_keys'][1]:
-        EEG_config.send_trigger(EEG_config.triggers['participant_choice_reject'])
         response = 'reject'
         result, effort_trace, average_effort, effort_time = None, None, None, None
         if action_type == 'approach':
@@ -701,13 +697,19 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # check if we are in a rating trial
     if rating_trial == "True":
         if attention_focus == "reward":
+            # Send trigger for rating question (reward) right after flipping the window to display the question
             EEG_config.send_trigger(EEG_config.triggers['rating_question_reward'])
-            rating, rating_time, rating_random_start_pos = hf.get_rating(win, attention_focus, reward_rate_stimulus, gv)
-            EEG_config.send_trigger(EEG_config.triggers['rating_response_reward'])
+            # call get_rating and pass the EEG_config and the trigger for rating response (reward)
+            rating, rating_time, rating_random_start_pos = hf.get_rating(win, attention_focus, reward_rate_stimulus, gv,
+                                                                         EEG_config,
+                                                                         EEG_config.triggers['rating_response_reward'])
         elif attention_focus == "heart":
+            # send trigger for rating question (heart) right after flipping the window to display the question
             EEG_config.send_trigger(EEG_config.triggers['rating_question_heart'])
-            rating, rating_time, rating_random_start_pos = hf.get_rating(win, attention_focus, heart_rate_stimulus, gv)
-            EEG_config.send_trigger(EEG_config.triggers['rating_response_heart'])
+            # call get_rating and pass the EEG_config and the trigger for rating response (heart)
+            rating, rating_time, rating_random_start_pos = hf.get_rating(win, attention_focus, heart_rate_stimulus, gv,
+                                                                         EEG_config,
+                                                                         EEG_config.triggers['rating_response_heart'])
     else:
         pass
 

@@ -581,11 +581,9 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     # Rong uses a linear shift of 25
     # trial_effort = 80
     # if info['trial_count'] % 2 == 0:
-    #     action_type = 'approach'
     #     attention_focus = 'reward'
-    #     rating_trial = "False"
+    #     rating_trial = "True"
     # else:
-    #     action_type = 'avoid'
     #     attention_focus = 'heart'
     #     rating_trial = "True"
 

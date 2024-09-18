@@ -30,9 +30,9 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '8',
-           'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
-           'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
+expInfo = {'participant nr': '999',
+           'trial schedule': 'A_1',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
+           'grippers (y/n)': 'n',  # if y, use real grippers, if n, use mouse movement
            'eeg (y/n)': 'y',  # if y, send EEG triggers, if n, just print them
            'session nr': '0',  # 0 for training session, then 1, 2, 3
            'age': '',
@@ -649,6 +649,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
     outcome_trigger_code = EEG_config.triggers['outcome_presentation_approach'] if action_type == 'approach' else EEG_config.triggers['outcome_presentation_avoid']
     hf.draw_all_stimuli(win, [outcomes], 1, EEG_config, outcome_trigger_code)  # show reward/loss 1s and send EEG trigger
     hf.draw_all_stimuli(win, [fixation_cross_green], 0.1)
+    # EEG_config.send_trigger(2)
 
     # shift back to original position
     spaceship.pos = (spaceship.pos[0], spaceship.pos[1] - shift)

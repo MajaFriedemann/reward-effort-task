@@ -17,21 +17,35 @@ import serial
 ###################################
 # CLASSES
 ###################################
+import serial
+import time
+
 class EEGConfig:
     def __init__(self, triggers, send_triggers):
         self.triggers = triggers
         self.send_triggers = send_triggers
         if self.send_triggers:
             # Initialize the serial port connection if send_triggers is True
-            self.IOport = serial.Serial('COM6', 115200, timeout=0.001)  # change port it if necessary
+            self.IOport = serial.Serial('COM6', 115200, timeout=0.001)  # Change port if necessary
 
     def send_trigger(self, code):
         if self.send_triggers:
             # Actual sending of the trigger over serial port
             try:
-                self.IOport.write(str.encode(chr(code)))
+                # Send the 'mh' prefix followed by the trigger code and 0 (similar to MATLAB)
+                self.IOport.write(b'mh')  # Send 'mh' as two bytes (0x6D, 0x68)
+                self.IOport.write(bytes([code, 0]))  # Send trigger code and 0
                 self.IOport.flush()
-                print(f"Trigger {code} sent over serial port.")
+
+                # Pause briefly (optional, matching MATLAB's pause)
+                time.sleep(0.02)
+
+                # Reset the trigger by sending 'mh' followed by 0, 0
+                self.IOport.write(b'mh')
+                self.IOport.write(bytes([0, 0]))  # Reset to 0
+                self.IOport.flush()
+
+                print(f"Trigger {code} sent and reset over serial port.")
             except Exception as e:
                 print(f"Failed to send trigger {code} over serial port: {str(e)}")
         else:

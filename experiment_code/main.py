@@ -30,10 +30,10 @@ print('Reminder: Press Q to quit.')
 # PARTICIPANT INFO POP-UP
 expName = 'reward-effort-pgACC-TUS'
 curecID = 'R88533/RE002'
-expInfo = {'participant nr': '1',
+expInfo = {'participant nr': '8',
            'trial schedule': 'testing',  # schedule A or B, 1-8 (e.g. A_1), 'testing' for testing, 'training' for training session
            'grippers (y/n)': 'y',  # if y, use real grippers, if n, use mouse movement
-           'eeg (y/n)': 'n',  # if y, send EEG triggers, if n, just print them
+           'eeg (y/n)': 'y',  # if y, send EEG triggers, if n, just print them
            'session nr': '0',  # 0 for training session, then 1, 2, 3
            'age': '',
            'gender (f/m/o)': '',

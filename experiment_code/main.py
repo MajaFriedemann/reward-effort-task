@@ -90,7 +90,8 @@ gv = dict(
 
 # READ TRIAL SCHEDULE
 trial_schedule_key = expInfo['trial schedule']
-trial_schedule_filepath = f'../final_trial_schedules/schedule_{trial_schedule_key}.csv'
+# trial_schedule_filepath = f'../final_trial_schedules/schedule_{trial_schedule_key}.csv'  # removing reward rate tracking
+trial_schedule_filepath = f'../final_trial_schedules_without_reward_rate/schedule_{trial_schedule_key}.csv'
 if os.path.exists(trial_schedule_filepath):
     max_trial_number = 0
     max_block_trial_number = 0
@@ -412,10 +413,13 @@ event.clearEvents()
 
 # Ratings
 instructions_txt.text = (
-    "Throughout your adventure, you'll occasionally report on two metrics:\n\n"
+    # "Throughout your adventure, you'll occasionally report on two metrics:\n\n"  # removing reward rate tracking
+    "Throughout your adventure, you'll occasionally report on your current heart rate:\n\n"
     "\n\n\n\n"
     "Consider your recent experiences relative to your overall adventure.\n\n"
-    "To report these metrics, use the response keys (the same ones you use for accept/reject) to move the slider marker left or right and "
+    # "To report these metrics, "  # removing reward rate tracking
+    "To report this metric, "  
+    "use the response keys (the same ones you use for accept/reject) to move the slider marker left or right and "
     "confirm your selection by pressing the SPACE key. "
     "Note that the slider marker will always start out at a random position."
     "\n\nPress SPACE to continue."
@@ -424,23 +428,24 @@ heart_rate_text = visual.TextStim(win, text="• Your current heart rate\n\n\n\n
                                   height=instructions_txt.height)
 reward_rate_text = visual.TextStim(win, text="\n• Your current reward rate\n\n\n\n\n\n", pos=instructions_txt.pos,
                                    height=instructions_txt.height)
-stimuli = [instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus,
-           reward_rate_stimulus]
+# stimuli = [instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus, reward_rate_stimulus]  # removing reward rate tracking
+stimuli = [instructions_txt, heart_rate_text,heart_rate_stimulus]
 hf.draw_all_stimuli(win, stimuli)
 event.waitKeys(keyList=['space'])  # show instructions until space is pressed
 event.clearEvents()
 
-instructions_txt.text = (
-    "You'll see an icon flashing at the beginning of each trial, reminding you which metric (reward or heart rate) you are currently tracking.\n\n"
-    "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high "
-    "reward rate. Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
-    "\n\nPress SPACE to continue."
-)
-instructions_txt.draw()
-win.flip()
-event.waitKeys(keyList=['space'])  # show instructions until space is pressed
-hf.exit_q(win)
-event.clearEvents()
+# removing reward rate tracking
+# instructions_txt.text = (
+#     "You'll see an icon flashing at the beginning of each trial, reminding you which metric (reward or heart rate) you are currently tracking.\n\n"
+#     "In avoid blocks, even though you are losing points, you should still use the complete scale from low to high "
+#     "reward rate. Consider your reward rate in the current context: if the loss is comparatively small, you may still have a high reward rate in that instance."
+#     "\n\nPress SPACE to continue."
+# )
+# instructions_txt.draw()
+# win.flip()
+# event.waitKeys(keyList=['space'])  # show instructions until space is pressed
+# hf.exit_q(win)
+# event.clearEvents()
 
 # Training quiz
 if gv['training']:
@@ -642,7 +647,8 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
         outcome.pos = (outcome.pos[0], outcome.pos[1] - 220)
 
     # sequentially show effort and then outcome offer
-    hf.draw_all_stimuli(win, [cue], 0.5)  # show cue 500ms
+    # hf.draw_all_stimuli(win, [cue], 0.5)  # show cue 500ms # removing reward rate tracking
+    hf.draw_all_stimuli(win, [fixation_cross], 0.5)  # show fixation cross 500ms
     effort_trigger_code = EEG_config.triggers['effort_presentation_approach'] if action_type == 'approach' else EEG_config.triggers['effort_presentation_avoid']
     hf.draw_all_stimuli(win, [spaceship, outline, target], 1, EEG_config, effort_trigger_code)  # show effort 1s and send EEG trigger
     hf.draw_all_stimuli(win, [fixation_cross], 0.5)  # show fixation cross 500ms

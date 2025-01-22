@@ -546,6 +546,7 @@ def get_rating(win, attention_focus, image, gv, EEG_config=None, response_trigge
                            labelHeight=23,
                            color='white',  # Color of the slider and labels
                            markerColor=convert_rgb_to_psychopy([245, 0, 0]),  # heart red
+                           font='Arial',
                            )
     if attention_focus == 'reward':
         slider.markerColor = convert_rgb_to_psychopy([234, 144, 46])  # reward gold
@@ -590,8 +591,7 @@ def get_rating(win, attention_focus, image, gv, EEG_config=None, response_trigge
     # Stop the timer and get the response time
     response_time = response_timer.getTime()
     # Calculate the rating based on the marker position
-    rating = slider.markerPos / 10
-    rating = round(rating, 3)
+    rating = slider.markerPos
 
     core.wait(0.5)
 

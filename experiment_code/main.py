@@ -69,7 +69,7 @@ gv = dict(
     net_value_shift=30,  # shift in net value for shifted effort state
     assumed_k=1.1,  # assumed k value for effort shift calculation
     training=False,  # training session
-    base_bonus_payment=8,  # base bonus payment in pounds
+    base_bonus_payment=5,  # base bonus payment in pounds
 
     # trial schedule
     num_trials=None,
@@ -261,7 +261,8 @@ upper_button_txt = visual.TextStim(win=win, text='ACCEPT', height=25, pos=upper_
 lower_button = visual.Rect(win=win, units="pix", width=160, height=60, pos=(0, -330), fillColor='white')
 lower_button_txt = visual.TextStim(win=win, text='REJECT', height=25, pos=lower_button.pos, color='black', bold=True,
                                    font='Arial')
-heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 244), size=(65, 65))
+# heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(260, 244), size=(65, 65))  # removing reward rate tracking
+heart_rate_stimulus = visual.ImageStim(win, image="pictures/heart.png", pos=(200, 235), size=(65, 65))
 reward_rate_stimulus = visual.ImageStim(win, image="pictures/money.png", pos=(280, 180), size=(65, 65))
 heart_cue = visual.ImageStim(win, image="pictures/heart.png", pos=(0, 0), size=(70, 70))
 reward_cue = visual.ImageStim(win, image="pictures/money.png", pos=heart_cue.pos, size=(70, 70))
@@ -269,8 +270,8 @@ accept_txt = visual.TextStim(win=win, text='A', height=30, pos=(-35, -300), colo
 oval_accept = visual.Circle(win=win, radius=24, pos=accept_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
 reject_txt = visual.TextStim(win=win, text='R', height=30, pos=(35, -300), color='white', bold=True, font='Arial')
 oval_reject = visual.Circle(win=win, radius=24, pos=reject_txt.pos, edges=180, lineColor='white', lineWidth=2, fillColor=None)
-fixation_cross = visual.TextStim(win, text='+', height=60, color='white')
-fixation_cross_green = visual.TextStim(win, text='+', height=60, color='green')
+fixation_cross = visual.TextStim(win, text='+', height=60, color='white', font='Arial')
+fixation_cross_green = visual.TextStim(win, text='+', height=60, color='green', font='Arial')
 
 ###################################
 # INSTRUCTIONS
@@ -414,8 +415,8 @@ event.clearEvents()
 # Ratings
 instructions_txt.text = (
     # "Throughout your adventure, you'll occasionally report on two metrics:\n\n"  # removing reward rate tracking
-    "Throughout your adventure, you'll occasionally report on your current heart rate:\n\n"
-    "\n\n\n\n"
+    "Throughout your adventure, you'll occasionally report on your \ncurrent heart rate.\n\n"
+    # "\n\n\n\n"
     "Consider your recent experiences relative to your overall adventure.\n\n"
     # "To report these metrics, "  # removing reward rate tracking
     "To report this metric, "  
@@ -425,11 +426,11 @@ instructions_txt.text = (
     "\n\nPress SPACE to continue."
 )
 heart_rate_text = visual.TextStim(win, text="• Your current heart rate\n\n\n\n\n\n\n\n", pos=instructions_txt.pos,
-                                  height=instructions_txt.height)
+                                  height=instructions_txt.height, font='Arial')
 reward_rate_text = visual.TextStim(win, text="\n• Your current reward rate\n\n\n\n\n\n", pos=instructions_txt.pos,
-                                   height=instructions_txt.height)
+                                   height=instructions_txt.height, font='Arial')
 # stimuli = [instructions_txt, heart_rate_text, reward_rate_text, heart_rate_stimulus, reward_rate_stimulus]  # removing reward rate tracking
-stimuli = [instructions_txt, heart_rate_text,heart_rate_stimulus]
+stimuli = [instructions_txt, heart_rate_stimulus]
 hf.draw_all_stimuli(win, stimuli)
 event.waitKeys(keyList=['space'])  # show instructions until space is pressed
 event.clearEvents()
@@ -702,7 +703,7 @@ while info['trial_count'] < gv['num_trials']:  # this must be < because we start
                                      EEG_config, gv, cue)
 
     # check if we are in a rating trial
-    if rating_trial == "True":
+    if str(rating_trial).lower() == "true":
         if attention_focus == "reward":
             # Send trigger for rating question (reward) right after flipping the window to display the question
             EEG_config.send_trigger(EEG_config.triggers['rating_question_reward'])

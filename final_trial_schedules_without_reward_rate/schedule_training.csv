@@ -1,7 +1,7 @@
 outcome_level,actual_outcome,effort,action_type,rating,trial_in_block,trial_order,attention_focus,global_effort_state,trial_in_experiment,block_number,schedule_version
 40,42,50,approach,FALSE,1,training_trials,heart,normal,1,1,training_schedule
-20,20,55,approach,FALSE,2,training_trials,heart,normal,2,1,training_schedule
-100,116,80,approach,TRUE,3,training_trials,heart,normal,3,1,training_schedule
+20,20,55,approach,TRUE,2,training_trials,heart,normal,2,1,training_schedule
+100,116,80,approach,FALSE,3,training_trials,heart,normal,3,1,training_schedule
 -20,-14,90,avoid,FALSE,1,training_trials,heart,normal,4,2,training_schedule
--60,-60,85,avoid,FALSE,2,training_trials,heart,normal,5,2,training_schedule
--40,-42,75,avoid,TRUE,3,training_trials,heart,normal,6,2,training_schedule
+-60,-60,85,avoid,TRUE,2,training_trials,heart,normal,5,2,training_schedule
+-40,-42,75,avoid,FALSE,3,training_trials,heart,normal,6,2,training_schedule

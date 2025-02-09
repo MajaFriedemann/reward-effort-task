@@ -754,13 +754,13 @@ info['duration'] = str(duration)
 
 big_txt.pos = [0, 200]
 if gv['training']:
-    big_txt.text = "\n\nWell done! \n\nYou have completed the training session."
+    big_txt.text = "\n\nWell done! \n\nPlease let the experimenter know that you are finished."
     instructions_txt.text = " "
 else:
     final_bonus_payment = hf.calculate_bonus_payment(all_trials, gv)
     info['final_bonus_payment'] = final_bonus_payment
     print(f"Final bonus payment: £{final_bonus_payment: .2f}")
-    big_txt.text = "Well done! You have completed the task."
+    big_txt.text = "Please let the experimenter know that you are done."
     instructions_txt.text = f"\n\n\n\n\n\nYour bonus payment is £{final_bonus_payment: .2f}!"
 
 # Update the last trial with end time, duration, and bonus payment

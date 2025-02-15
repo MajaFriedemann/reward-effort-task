@@ -42,10 +42,26 @@ dlg = gui.DlgFromDict(dictionary=expInfo, sortKeys=False, title=expName)
 if not dlg.OK:
     core.quit()
 
-# PARTICIPANT MAX GRIP STRENGTH
-for filename in os.listdir('calibration_data'):
+# # PARTICIPANT MAX GRIP STRENGTH
+# for filename in os.listdir('calibration_data'):
+#     if filename.startswith(expInfo['participant nr']) and filename.endswith('.csv'):
+#         filepath = os.path.join('calibration_data/', filename)
+#         with open(filepath, 'r') as csvfile:
+#             reader = csv.DictReader(csvfile)
+#             for row in reader:
+#                 max_strength = float(row['max_strength'])
+# if max_strength is None:
+#     print('Max strength calibration file for participant not found.')
+# else:
+#     print(max_strength)
+# max_strength = 0.9 * max_strength  # MAJA
+
+# PARTICIPANT MAX GRIP STRENGTH - use absolute path with getcwd()
+calibration_folder = os.path.join(os.getcwd(), 'calibration_data')
+max_strength = None
+for filename in os.listdir(calibration_folder):
     if filename.startswith(expInfo['participant nr']) and filename.endswith('.csv'):
-        filepath = os.path.join('calibration_data/', filename)
+        filepath = os.path.join(calibration_folder, filename)
         with open(filepath, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
@@ -54,7 +70,8 @@ if max_strength is None:
     print('Max strength calibration file for participant not found.')
 else:
     print(max_strength)
-max_strength = 0.9 * max_strength  # MAJA
+    max_strength = 0.9 * max_strength  # MAJA
+
 
 # TASK VARIABLES
 gv = dict(
@@ -91,7 +108,9 @@ gv = dict(
 # READ TRIAL SCHEDULE
 trial_schedule_key = expInfo['trial schedule']
 # trial_schedule_filepath = f'../final_trial_schedules/schedule_{trial_schedule_key}.csv'  # removing reward rate tracking
-trial_schedule_filepath = f'../final_trial_schedules_without_reward_rate/schedule_{trial_schedule_key}.csv'
+# trial_schedule_filepath = f'../final_trial_schedules_without_reward_rate/schedule_{trial_schedule_key}.csv'
+trial_schedule_folder = os.path.join(os.getcwd(), 'final_trial_schedules_without_reward_rate')  # use absolute path with getcwd()
+trial_schedule_filepath = os.path.join(trial_schedule_folder, f'schedule_{trial_schedule_key}.csv')
 if os.path.exists(trial_schedule_filepath):
     max_trial_number = 0
     max_block_trial_number = 0
